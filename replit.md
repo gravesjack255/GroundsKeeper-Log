@@ -96,6 +96,17 @@ Preferred communication style: Simple, everyday language.
 - Equipment Detail page includes new "Maintenance Spend" card with YTD, 6 Month, and All Time filters
 - Chart titles update dynamically based on selected period
 
+### February 2026 - Equipment Marketplace
+- New marketplace feature for listing equipment for sale with full maintenance history visible to buyers
+- Database: `marketplaceListings` table with equipmentId, sellerId, askingPrice, description, contactInfo
+- Public API: GET /api/marketplace (list), GET /api/marketplace/:id (detail with maintenance logs)
+- Protected API: POST /api/marketplace (create listing), DELETE /api/marketplace/:id (remove)
+- Frontend pages: /marketplace (browse listings), /marketplace/:id (listing detail)
+- PostToMarketplaceDialog component on equipment detail page for easy listing creation
+- Marketplace link added to header navigation
+- Listings show equipment details, price, seller info, and complete maintenance history
+- Data isolation: users can only create/remove their own listings
+
 ### Development Tools
 - **Vite**: Frontend build tool with React plugin
 - **esbuild**: Server bundling for production

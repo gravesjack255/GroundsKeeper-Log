@@ -11,6 +11,8 @@ import EquipmentList from "@/pages/EquipmentList";
 import EquipmentDetail from "@/pages/EquipmentDetail";
 import MaintenanceLogs from "@/pages/MaintenanceLogs";
 import Landing from "@/pages/Landing";
+import Marketplace from "@/pages/Marketplace";
+import MarketplaceDetail from "@/pages/MarketplaceDetail";
 
 function AuthenticatedRoutes() {
   return (
@@ -19,6 +21,8 @@ function AuthenticatedRoutes() {
       <Route path="/equipment" component={EquipmentList} />
       <Route path="/equipment/:id" component={EquipmentDetail} />
       <Route path="/maintenance" component={MaintenanceLogs} />
+      <Route path="/marketplace" component={Marketplace} />
+      <Route path="/marketplace/:id" component={MarketplaceDetail} />
       <Route component={NotFound} />
     </Switch>
   );

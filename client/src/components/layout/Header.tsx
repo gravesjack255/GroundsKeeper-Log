@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, PenTool, Wrench, LogOut } from "lucide-react";
+import { LayoutDashboard, PenTool, Wrench, LogOut, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export function Header() {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/equipment", label: "Equipment Fleet", icon: PenTool },
     { href: "/maintenance", label: "Maintenance Logs", icon: Wrench },
+    { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
   ];
 
   const userInitials = user 

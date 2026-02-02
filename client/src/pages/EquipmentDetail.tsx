@@ -21,6 +21,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { LogMaintenanceDialog } from "@/components/maintenance/LogMaintenanceDialog";
 import { EditEquipmentDialog } from "@/components/equipment/EditEquipmentDialog";
+import { PostToMarketplaceDialog } from "@/components/marketplace/PostToMarketplaceDialog";
 import { format, subMonths, startOfYear } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -171,6 +172,11 @@ export default function EquipmentDetail() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+              
+              <PostToMarketplaceDialog
+                equipmentId={equipment.id}
+                equipmentName={equipment.name}
+              />
               
               <EditEquipmentDialog
                 equipment={equipment}

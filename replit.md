@@ -98,13 +98,19 @@ Preferred communication style: Simple, everyday language.
 
 ### February 2026 - Equipment Marketplace
 - New marketplace feature for listing equipment for sale with full maintenance history visible to buyers
-- Database: `marketplaceListings` table with equipmentId, sellerId, askingPrice, description, contactInfo
-- Public API: GET /api/marketplace (list), GET /api/marketplace/:id (detail with maintenance logs)
-- Protected API: POST /api/marketplace (create listing), DELETE /api/marketplace/:id (remove)
-- Frontend pages: /marketplace (browse listings), /marketplace/:id (listing detail)
+- Database: `marketplaceListings` table with equipmentId, sellerId, askingPrice, description, contactInfo, location, latitude, longitude
+- All marketplace API routes require authentication (browsing restricted to logged-in users)
+- Protected API: GET /api/marketplace (list with distance filter), GET /api/marketplace/:id (detail), POST /api/marketplace (create), DELETE /api/marketplace/:id (remove)
+- Frontend pages: /marketplace (browse listings with distance search), /marketplace/:id (listing detail)
+- Location-based features:
+  - Sellers enter location (City, State) when posting equipment
+  - Location is geocoded to lat/lng via Nominatim OpenStreetMap API
+  - Buyers can use browser geolocation to see distance to listings
+  - Distance filter options: 25, 50, 100, 250, 500 miles
+  - Haversine formula calculates accurate distance in miles
 - PostToMarketplaceDialog component on equipment detail page for easy listing creation
 - Marketplace link added to header navigation
-- Listings show equipment details, price, seller info, and complete maintenance history
+- Listings show equipment details, price, seller info, location, distance, and complete maintenance history
 - Data isolation: users can only create/remove their own listings
 
 ### Development Tools

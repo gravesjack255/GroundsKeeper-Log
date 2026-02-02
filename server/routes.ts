@@ -74,6 +74,21 @@ export async function registerRoutes(
     try {
       const input = api.maintenance.create.input.parse(req.body);
       const log = await storage.createMaintenanceLog(input);
+      
+      // Update equipment hours if hoursAtService is provided
+      if (input.hoursAtService) {
+        const equipmentItem = await storage.getEquipment(input.equipmentId);
+        if (equipmentItem) {
+          const newHours = parseFloat(String(input.hoursAtService));
+          const currentHours = parseFloat(String(equipmentItem.currentHours));
+          if (newHours > currentHours) {
+            await storage.updateEquipment(input.equipmentId, { 
+              currentHours: String(newHours) 
+            });
+          }
+        }
+      }
+      
       res.status(201).json(log);
     } catch (err) {
       if (err instanceof z.ZodError) {

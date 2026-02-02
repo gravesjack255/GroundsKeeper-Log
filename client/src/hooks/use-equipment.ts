@@ -7,11 +7,18 @@ import type {
 } from "@shared/schema";
 
 export function useEquipment(params?: { status?: string; search?: string }) {
+  // Filter out undefined values from params for clean query key and URL
+  const cleanParams = params ? Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
+  ) : undefined;
+  
+  const hasParams = cleanParams && Object.keys(cleanParams).length > 0;
+  
   return useQuery({
-    queryKey: [api.equipment.list.path, params],
+    queryKey: [api.equipment.list.path, hasParams ? cleanParams : undefined],
     queryFn: async () => {
-      const url = params 
-        ? `${api.equipment.list.path}?${new URLSearchParams(params as Record<string, string>)}`
+      const url = hasParams
+        ? `${api.equipment.list.path}?${new URLSearchParams(cleanParams as Record<string, string>)}`
         : api.equipment.list.path;
       
       const res = await fetch(url);
@@ -58,7 +65,7 @@ export function useCreateEquipment() {
       return api.equipment.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.equipment.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.equipment.list.path], exact: false });
       toast({
         title: "Success",
         description: "Equipment added to fleet.",

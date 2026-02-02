@@ -34,8 +34,8 @@ export function useCreateMaintenanceLog() {
       return api.maintenance.create.responses[201].parse(await res.json());
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [api.maintenance.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.equipment.list.path] }); // Update equipment list if status changed
+      queryClient.invalidateQueries({ queryKey: [api.maintenance.list.path], exact: false });
+      queryClient.invalidateQueries({ queryKey: [api.equipment.list.path], exact: false }); // Update equipment hours
       if (data.equipmentId) {
         queryClient.invalidateQueries({ queryKey: [api.equipment.get.path, data.equipmentId] });
       }

@@ -8,7 +8,7 @@ import {
   type MaintenanceLog,
   type InsertMaintenanceLog,
 } from "@shared/schema";
-import { eq, desc, like, or } from "drizzle-orm";
+import { eq, desc, ilike, or, and, SQL } from "drizzle-orm";
 
 export interface IStorage {
   // Equipment
@@ -26,28 +26,26 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getEquipmentList(search?: string, status?: string): Promise<Equipment[]> {
-    let query = db.select().from(equipment);
+    const conditions: SQL[] = [];
     
-    // Simple filtering - could be improved with dynamic where clauses
-    if (search || status) {
-       // Note: complex filtering is often better handled by building the where clause array
-       // For this simple MVP, we return all and let filters happen or add basic logic if needed
-       // But let's do a basic search implementation
-       const conditions = [];
-       if (status) conditions.push(eq(equipment.status, status));
-       if (search) {
-         const searchLower = `%${search.toLowerCase()}%`;
-         conditions.push(or(
-           like(equipment.name, searchLower),
-           like(equipment.make, searchLower),
-           like(equipment.model, searchLower)
-         ));
-       }
-       
-       if (conditions.length > 0) {
-         // @ts-ignore - simple condition combining for MVP
-         return await db.select().from(equipment).where(conditions.reduce((acc, c) => (acc ? and(acc, c) : c), undefined)); 
-       }
+    if (status) {
+      conditions.push(eq(equipment.status, status));
+    }
+    
+    if (search) {
+      const searchPattern = `%${search}%`;
+      conditions.push(
+        or(
+          ilike(equipment.name, searchPattern),
+          ilike(equipment.make, searchPattern),
+          ilike(equipment.model, searchPattern)
+        )!
+      );
+    }
+    
+    if (conditions.length > 0) {
+      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+      return await db.select().from(equipment).where(whereClause).orderBy(desc(equipment.createdAt));
     }
     
     return await db.select().from(equipment).orderBy(desc(equipment.createdAt));

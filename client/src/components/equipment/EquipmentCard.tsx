@@ -2,8 +2,10 @@ import { Equipment } from "@shared/schema";
 import { Link } from "wouter";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, Hash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Calendar, Hash, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LogMaintenanceDialog } from "@/components/maintenance/LogMaintenanceDialog";
 
 interface EquipmentCardProps {
   equipment: Equipment;
@@ -20,62 +22,73 @@ export function EquipmentCard({ equipment }: EquipmentCardProps) {
   };
 
   return (
-    <Link href={`/equipment/${equipment.id}`}>
-      <Card className="card-hover h-full cursor-pointer border-border/50 bg-card overflow-hidden group">
-        <div className="aspect-video w-full bg-secondary/50 relative overflow-hidden">
-          {equipment.imageUrl ? (
-            <img 
-              src={equipment.imageUrl} 
-              alt={equipment.name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
-              <span className="text-4xl font-display font-bold text-muted-foreground/20">
-                {equipment.make.charAt(0)}
-              </span>
+    <Card className="h-full border-border/50 bg-card overflow-hidden group">
+      <Link href={`/equipment/${equipment.id}`}>
+        <div className="cursor-pointer">
+          <div className="aspect-video w-full bg-secondary/50 relative overflow-hidden">
+            {equipment.imageUrl ? (
+              <img 
+                src={equipment.imageUrl} 
+                alt={equipment.name}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
+                <span className="text-4xl font-display font-bold text-muted-foreground/20">
+                  {equipment.make.charAt(0)}
+                </span>
+              </div>
+            )}
+            <div className="absolute top-3 right-3">
+               <Badge variant="outline" className={cn("capitalize backdrop-blur-sm", getStatusColor(equipment.status))}>
+                 {equipment.status}
+               </Badge>
             </div>
-          )}
-          <div className="absolute top-3 right-3">
-             <Badge variant="outline" className={cn("capitalize backdrop-blur-sm", getStatusColor(equipment.status))}>
-               {equipment.status}
-             </Badge>
           </div>
+          
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-display text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                  {equipment.name}
+                </h3>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {equipment.make} {equipment.model}
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+               <div className="flex items-center gap-1.5 text-muted-foreground">
+                 <Clock className="h-3.5 w-3.5" />
+                 <span>{Number(equipment.currentHours).toLocaleString()} hrs</span>
+               </div>
+               <div className="flex items-center gap-1.5 text-muted-foreground">
+                 <Calendar className="h-3.5 w-3.5" />
+                 <span>{equipment.year}</span>
+               </div>
+            </div>
+          </CardContent>
         </div>
-        
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-display text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                {equipment.name}
-              </h3>
-              <p className="text-sm text-muted-foreground font-medium">
-                {equipment.make} {equipment.model}
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="pb-4">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-             <div className="flex items-center gap-1.5 text-muted-foreground">
-               <Clock className="h-3.5 w-3.5" />
-               <span>{Number(equipment.currentHours).toLocaleString()} hrs</span>
-             </div>
-             <div className="flex items-center gap-1.5 text-muted-foreground">
-               <Calendar className="h-3.5 w-3.5" />
-               <span>{equipment.year}</span>
-             </div>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="pt-0 border-t bg-muted/20 p-4">
-           <div className="flex items-center gap-1.5 text-xs text-muted-foreground w-full">
-             <Hash className="h-3 w-3 opacity-50" />
-             <span className="font-mono">{equipment.serialNumber || 'N/A'}</span>
-           </div>
-        </CardFooter>
-      </Card>
-    </Link>
+      </Link>
+      
+      <CardFooter className="pt-0 border-t bg-muted/20 p-4 flex justify-between items-center gap-2">
+         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+           <Hash className="h-3 w-3 opacity-50" />
+           <span className="font-mono">{equipment.serialNumber || 'N/A'}</span>
+         </div>
+         <LogMaintenanceDialog 
+           equipment={equipment}
+           trigger={
+             <Button size="sm" variant="outline" className="gap-1.5" data-testid={`button-log-maintenance-${equipment.id}`}>
+               <Wrench className="h-3.5 w-3.5" />
+               Log Service
+             </Button>
+           }
+         />
+      </CardFooter>
+    </Card>
   );
 }

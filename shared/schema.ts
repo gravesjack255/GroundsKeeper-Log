@@ -9,6 +9,7 @@ export * from "./models/auth";
 // === TABLE DEFINITIONS ===
 export const equipment = pgTable("equipment", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(), // Owner of this equipment
   name: text("name").notNull(), // e.g., "Fairway Mower #1"
   make: text("make").notNull(),
   model: text("model").notNull(),
@@ -23,6 +24,7 @@ export const equipment = pgTable("equipment", {
 
 export const maintenanceLogs = pgTable("maintenance_logs", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(), // Owner of this log
   equipmentId: integer("equipment_id").references(() => equipment.id).notNull(),
   date: date("date").defaultNow().notNull(),
   type: text("type").notNull(), // Routine, Repair, Inspection
@@ -46,8 +48,9 @@ export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one }) => 
 }));
 
 // === BASE SCHEMAS ===
-export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true, createdAt: true });
-export const insertMaintenanceLogSchema = createInsertSchema(maintenanceLogs).omit({ id: true, createdAt: true });
+// Omit userId as it's set server-side from authenticated user
+export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true, userId: true, createdAt: true });
+export const insertMaintenanceLogSchema = createInsertSchema(maintenanceLogs).omit({ id: true, userId: true, createdAt: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 export type Equipment = typeof equipment.$inferSelect;

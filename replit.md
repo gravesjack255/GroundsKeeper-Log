@@ -73,6 +73,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### February 2026 - User Authentication & Multi-User Support
+- Integrated Replit Auth for secure login (supports Google, GitHub, X, Apple, email)
+- Added userId ownership to equipment and maintenanceLogs schemas
+- All API routes protected with authentication middleware
+- User data isolation: users can only see/modify their own equipment and logs
+- Landing page for unauthenticated users with marketing content
+- Header shows user profile dropdown with name, email, and sign out option
+- Created subscription config (shared/config.ts) for easy future paywall toggle
+- Currently free to use; infrastructure ready for paid subscriptions
+
 ### February 2026 - Photo Upload Feature
 - Added file upload capability for equipment photos (from device photo library instead of URL input)
 - Backend: `/api/upload` endpoint handles multipart form data with multer

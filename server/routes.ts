@@ -74,15 +74,17 @@ export async function registerRoutes(
 
   // Equipment Routes (protected)
   app.get(api.equipment.list.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     const search = req.query.search as string | undefined;
     const status = req.query.status as string | undefined;
-    const items = await storage.getEquipmentList(search, status);
+    const items = await storage.getEquipmentList(userId, search, status);
     res.json(items);
   });
 
   app.get(api.equipment.get.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     const id = Number(req.params.id);
-    const item = await storage.getEquipment(id);
+    const item = await storage.getEquipment(userId, id);
     if (!item) {
       return res.status(404).json({ message: "Equipment not found" });
     }
@@ -90,9 +92,10 @@ export async function registerRoutes(
   });
 
   app.post(api.equipment.create.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     try {
       const input = api.equipment.create.input.parse(req.body);
-      const item = await storage.createEquipment(input);
+      const item = await storage.createEquipment(userId, input);
       res.status(201).json(item);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -106,10 +109,11 @@ export async function registerRoutes(
   });
 
   app.patch(api.equipment.update.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     const id = Number(req.params.id);
     try {
       const input = api.equipment.update.input.parse(req.body);
-      const item = await storage.updateEquipment(id, input);
+      const item = await storage.updateEquipment(userId, id, input);
       if (!item) return res.status(404).json({ message: "Equipment not found" });
       res.json(item);
     } catch (err) {
@@ -121,34 +125,41 @@ export async function registerRoutes(
   });
 
   app.delete(api.equipment.delete.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     const id = Number(req.params.id);
-    await storage.deleteEquipment(id);
+    await storage.deleteEquipment(userId, id);
     res.status(204).send();
   });
 
   // Maintenance Routes (protected)
   app.get(api.maintenance.list.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     const equipmentId = req.query.equipmentId ? Number(req.query.equipmentId) : undefined;
-    const logs = await storage.getMaintenanceLogs(equipmentId);
+    const logs = await storage.getMaintenanceLogs(userId, equipmentId);
     res.json(logs);
   });
 
   app.post(api.maintenance.create.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     try {
       const input = api.maintenance.create.input.parse(req.body);
-      const log = await storage.createMaintenanceLog(input);
+      
+      // Verify equipment belongs to user before creating log
+      const equipmentItem = await storage.getEquipment(userId, input.equipmentId);
+      if (!equipmentItem) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+      
+      const log = await storage.createMaintenanceLog(userId, input);
       
       // Update equipment hours if hoursAtService is provided
       if (input.hoursAtService) {
-        const equipmentItem = await storage.getEquipment(input.equipmentId);
-        if (equipmentItem) {
-          const newHours = parseFloat(String(input.hoursAtService));
-          const currentHours = parseFloat(String(equipmentItem.currentHours));
-          if (newHours > currentHours) {
-            await storage.updateEquipment(input.equipmentId, { 
-              currentHours: String(newHours) 
-            });
-          }
+        const newHours = parseFloat(String(input.hoursAtService));
+        const currentHours = parseFloat(String(equipmentItem.currentHours));
+        if (newHours > currentHours) {
+          await storage.updateEquipment(userId, input.equipmentId, { 
+            currentHours: String(newHours) 
+          });
         }
       }
       
@@ -165,87 +176,13 @@ export async function registerRoutes(
   });
 
   app.delete(api.maintenance.delete.path, isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
     const id = Number(req.params.id);
-    await storage.deleteMaintenanceLog(id);
+    await storage.deleteMaintenanceLog(userId, id);
     res.status(204).send();
   });
 
-  // Seed data function
-  await seedDatabase();
+  // No seed data in multi-user mode - each user starts fresh
 
   return httpServer;
-}
-
-async function seedDatabase() {
-  const existing = await storage.getEquipmentList();
-  if (existing.length > 0) return;
-
-  console.log("Seeding database...");
-
-  const mower = await storage.createEquipment({
-    name: "Fairway Master 5000",
-    make: "Toro",
-    model: "Reelmaster 5010-H",
-    year: 2022,
-    currentHours: "450.5",
-    serialNumber: "TR-5010-22-001",
-    status: "active",
-    notes: "Primary fairway mower. Check reels weekly.",
-  });
-
-  const cart = await storage.createEquipment({
-    name: "Beverage Cart #2",
-    make: "Club Car",
-    model: "Carryall 500",
-    year: 2020,
-    currentHours: "1200.0",
-    serialNumber: "CC-500-20-882",
-    status: "active",
-    notes: "New tires installed Jan 2024",
-  });
-
-  const tractor = await storage.createEquipment({
-    name: "Utility Tractor",
-    make: "John Deere",
-    model: "4066R",
-    year: 2019,
-    currentHours: "2150.2",
-    serialNumber: "JD-4066-19-445",
-    status: "maintenance",
-    notes: "Awaiting hydraulic pump part",
-  });
-
-  // Logs for mower
-  await storage.createMaintenanceLog({
-    equipmentId: mower.id,
-    date: "2024-01-15",
-    type: "Routine",
-    description: "Oil change and filter replacement",
-    cost: "85.50",
-    hoursAtService: "430.0",
-    performedBy: "Mike T.",
-  });
-
-  await storage.createMaintenanceLog({
-    equipmentId: mower.id,
-    date: "2024-02-01",
-    type: "Inspection",
-    description: "Reel sharpening and height adjustment",
-    cost: "150.00",
-    hoursAtService: "445.0",
-    performedBy: "External Service",
-  });
-
-  // Logs for tractor
-  await storage.createMaintenanceLog({
-    equipmentId: tractor.id,
-    date: "2024-02-10",
-    type: "Repair",
-    description: "Hydraulic leak diagnosis - ordered pump",
-    cost: "0.00",
-    hoursAtService: "2150.2",
-    performedBy: "Mike T.",
-  });
-  
-  console.log("Seeding complete!");
 }

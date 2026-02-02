@@ -11,22 +11,22 @@ import {
 import { eq, desc, ilike, or, and, SQL } from "drizzle-orm";
 
 export interface IStorage {
-  // Equipment
-  getEquipmentList(search?: string, status?: string): Promise<Equipment[]>;
-  getEquipment(id: number): Promise<(Equipment & { logs: MaintenanceLog[] }) | undefined>;
-  createEquipment(data: InsertEquipment): Promise<Equipment>;
-  updateEquipment(id: number, updates: UpdateEquipmentRequest): Promise<Equipment>;
-  deleteEquipment(id: number): Promise<void>;
+  // Equipment - all operations scoped by userId
+  getEquipmentList(userId: string, search?: string, status?: string): Promise<Equipment[]>;
+  getEquipment(userId: string, id: number): Promise<(Equipment & { logs: MaintenanceLog[] }) | undefined>;
+  createEquipment(userId: string, data: InsertEquipment): Promise<Equipment>;
+  updateEquipment(userId: string, id: number, updates: UpdateEquipmentRequest): Promise<Equipment | undefined>;
+  deleteEquipment(userId: string, id: number): Promise<void>;
 
-  // Maintenance
-  getMaintenanceLogs(equipmentId?: number): Promise<MaintenanceLog[]>;
-  createMaintenanceLog(data: InsertMaintenanceLog): Promise<MaintenanceLog>;
-  deleteMaintenanceLog(id: number): Promise<void>;
+  // Maintenance - all operations scoped by userId
+  getMaintenanceLogs(userId: string, equipmentId?: number): Promise<MaintenanceLog[]>;
+  createMaintenanceLog(userId: string, data: InsertMaintenanceLog): Promise<MaintenanceLog>;
+  deleteMaintenanceLog(userId: string, id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getEquipmentList(search?: string, status?: string): Promise<Equipment[]> {
-    const conditions: SQL[] = [];
+  async getEquipmentList(userId: string, search?: string, status?: string): Promise<Equipment[]> {
+    const conditions: SQL[] = [eq(equipment.userId, userId)];
     
     if (status) {
       conditions.push(eq(equipment.status, status));
@@ -43,64 +43,67 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    if (conditions.length > 0) {
-      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
-      return await db.select().from(equipment).where(whereClause).orderBy(desc(equipment.createdAt));
-    }
-    
-    return await db.select().from(equipment).orderBy(desc(equipment.createdAt));
+    const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+    return await db.select().from(equipment).where(whereClause).orderBy(desc(equipment.createdAt));
   }
 
-  async getEquipment(id: number): Promise<(Equipment & { logs: MaintenanceLog[] }) | undefined> {
-    const item = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
+  async getEquipment(userId: string, id: number): Promise<(Equipment & { logs: MaintenanceLog[] }) | undefined> {
+    const item = await db.select().from(equipment)
+      .where(and(eq(equipment.id, id), eq(equipment.userId, userId)))
+      .limit(1);
     if (item.length === 0) return undefined;
 
     const logs = await db
       .select()
       .from(maintenanceLogs)
-      .where(eq(maintenanceLogs.equipmentId, id))
+      .where(and(eq(maintenanceLogs.equipmentId, id), eq(maintenanceLogs.userId, userId)))
       .orderBy(desc(maintenanceLogs.date));
 
     return { ...item[0], logs };
   }
 
-  async createEquipment(data: InsertEquipment): Promise<Equipment> {
-    const [item] = await db.insert(equipment).values(data).returning();
+  async createEquipment(userId: string, data: InsertEquipment): Promise<Equipment> {
+    const [item] = await db.insert(equipment).values({ ...data, userId }).returning();
     return item;
   }
 
-  async updateEquipment(id: number, updates: UpdateEquipmentRequest): Promise<Equipment> {
+  async updateEquipment(userId: string, id: number, updates: UpdateEquipmentRequest): Promise<Equipment | undefined> {
     const [item] = await db
       .update(equipment)
       .set(updates)
-      .where(eq(equipment.id, id))
+      .where(and(eq(equipment.id, id), eq(equipment.userId, userId)))
       .returning();
     return item;
   }
 
-  async deleteEquipment(id: number): Promise<void> {
-    await db.delete(maintenanceLogs).where(eq(maintenanceLogs.equipmentId, id));
-    await db.delete(equipment).where(eq(equipment.id, id));
+  async deleteEquipment(userId: string, id: number): Promise<void> {
+    // First delete related maintenance logs for this user's equipment
+    await db.delete(maintenanceLogs)
+      .where(and(eq(maintenanceLogs.equipmentId, id), eq(maintenanceLogs.userId, userId)));
+    // Then delete the equipment
+    await db.delete(equipment)
+      .where(and(eq(equipment.id, id), eq(equipment.userId, userId)));
   }
 
-  async getMaintenanceLogs(equipmentId?: number): Promise<MaintenanceLog[]> {
+  async getMaintenanceLogs(userId: string, equipmentId?: number): Promise<MaintenanceLog[]> {
+    const conditions: SQL[] = [eq(maintenanceLogs.userId, userId)];
+    
     if (equipmentId) {
-      return await db
-        .select()
-        .from(maintenanceLogs)
-        .where(eq(maintenanceLogs.equipmentId, equipmentId))
-        .orderBy(desc(maintenanceLogs.date));
+      conditions.push(eq(maintenanceLogs.equipmentId, equipmentId));
     }
-    return await db.select().from(maintenanceLogs).orderBy(desc(maintenanceLogs.date));
+    
+    const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+    return await db.select().from(maintenanceLogs).where(whereClause).orderBy(desc(maintenanceLogs.date));
   }
 
-  async createMaintenanceLog(data: InsertMaintenanceLog): Promise<MaintenanceLog> {
-    const [log] = await db.insert(maintenanceLogs).values(data).returning();
+  async createMaintenanceLog(userId: string, data: InsertMaintenanceLog): Promise<MaintenanceLog> {
+    const [log] = await db.insert(maintenanceLogs).values({ ...data, userId }).returning();
     return log;
   }
 
-  async deleteMaintenanceLog(id: number): Promise<void> {
-    await db.delete(maintenanceLogs).where(eq(maintenanceLogs.id, id));
+  async deleteMaintenanceLog(userId: string, id: number): Promise<void> {
+    await db.delete(maintenanceLogs)
+      .where(and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.userId, userId)));
   }
 }
 

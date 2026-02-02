@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRoute } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { useEquipmentDetail, useDeleteEquipment } from "@/hooks/use-equipment";
@@ -14,13 +15,16 @@ import {
   Wrench,
   AlertTriangle,
   CheckCircle2,
-  History
+  History,
+  DollarSign
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { LogMaintenanceDialog } from "@/components/maintenance/LogMaintenanceDialog";
 import { EditEquipmentDialog } from "@/components/equipment/EditEquipmentDialog";
-import { format } from "date-fns";
+import { format, subMonths, startOfYear } from "date-fns";
 import { cn } from "@/lib/utils";
+
+type SpendPeriod = 'ytd' | '6months' | 'all';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,9 +41,39 @@ export default function EquipmentDetail() {
   const [, params] = useRoute("/equipment/:id");
   const id = parseInt(params?.id || "0");
   const [, setLocation] = useLocation();
+  const [spendPeriod, setSpendPeriod] = useState<SpendPeriod>('ytd');
   
   const { data: equipment, isLoading } = useEquipmentDetail(id);
   const deleteEquipment = useDeleteEquipment();
+
+  // Calculate maintenance spend based on selected period
+  const getMaintenanceSpend = () => {
+    if (!equipment?.logs) return 0;
+    
+    const now = new Date();
+    let filteredLogs = equipment.logs;
+    
+    if (spendPeriod === 'ytd') {
+      const yearStart = startOfYear(now);
+      filteredLogs = equipment.logs.filter(log => new Date(log.date) >= yearStart);
+    } else if (spendPeriod === '6months') {
+      const sixMonthsAgo = subMonths(now, 6);
+      filteredLogs = equipment.logs.filter(log => new Date(log.date) >= sixMonthsAgo);
+    }
+    // 'all' uses all logs
+    
+    return filteredLogs.reduce((sum, log) => sum + Number(log.cost), 0);
+  };
+
+  const maintenanceSpend = getMaintenanceSpend();
+  
+  const getSpendLabel = () => {
+    switch (spendPeriod) {
+      case 'ytd': return 'Year-to-Date';
+      case '6months': return 'Last 6 Months';
+      case 'all': return 'All Time';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -168,7 +202,7 @@ export default function EquipmentDetail() {
           <div className="lg:col-span-2 space-y-6">
             
              {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Current Hours</CardTitle>
@@ -203,6 +237,47 @@ export default function EquipmentDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold font-display">{equipment.logs?.length || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-blue-500">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Maintenance Spend</CardTitle>
+                    <DollarSign className="h-4 w-4 text-blue-500" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold font-display text-slate-900">${maintenanceSpend.toLocaleString()}</div>
+                  <div className="flex gap-1 mt-2">
+                    <Button 
+                      variant={spendPeriod === 'ytd' ? 'default' : 'ghost'} 
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setSpendPeriod('ytd')}
+                      data-testid="button-equipment-spend-ytd"
+                    >
+                      YTD
+                    </Button>
+                    <Button 
+                      variant={spendPeriod === '6months' ? 'default' : 'ghost'} 
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setSpendPeriod('6months')}
+                      data-testid="button-equipment-spend-6months"
+                    >
+                      6M
+                    </Button>
+                    <Button 
+                      variant={spendPeriod === 'all' ? 'default' : 'ghost'} 
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setSpendPeriod('all')}
+                      data-testid="button-equipment-spend-all"
+                    >
+                      All
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

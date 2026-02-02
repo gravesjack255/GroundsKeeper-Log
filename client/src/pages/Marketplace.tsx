@@ -135,7 +135,6 @@ export default function Marketplace() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any">Any Distance</SelectItem>
-                  <SelectItem value="25">Within 25 mi</SelectItem>
                   <SelectItem value="50">Within 50 mi</SelectItem>
                   <SelectItem value="100">Within 100 mi</SelectItem>
                   <SelectItem value="250">Within 250 mi</SelectItem>

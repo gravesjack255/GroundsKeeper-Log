@@ -106,7 +106,7 @@ Preferred communication style: Simple, everyday language.
   - Sellers enter location (City, State) when posting equipment
   - Location is geocoded to lat/lng via Nominatim OpenStreetMap API
   - Buyers can use browser geolocation to see distance to listings
-  - Distance filter options: 25, 50, 100, 250, 500 miles
+  - Distance filter options: 50, 100, 250, 500 miles
   - Haversine formula calculates accurate distance in miles
 - PostToMarketplaceDialog component on equipment detail page for easy listing creation
 - Marketplace link added to header navigation

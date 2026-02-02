@@ -62,7 +62,7 @@ export default function EquipmentDetail() {
         <Header />
         <main className="container mx-auto px-4 pt-20 text-center">
           <h1 className="text-2xl font-bold">Equipment not found</h1>
-          <Button variant="link" onClick={() => setLocation('/equipment')}>Return to list</Button>
+          <Button variant="ghost" onClick={() => setLocation('/equipment')}>Return to list</Button>
         </main>
       </div>
     );

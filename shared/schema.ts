@@ -43,6 +43,9 @@ export const marketplaceListings = pgTable("marketplace_listings", {
   askingPrice: decimal("asking_price", { precision: 10, scale: 2 }).notNull(),
   description: text("description"), // Additional listing notes
   contactInfo: text("contact_info"), // How buyers can reach the seller
+  location: text("location"), // City, State display text
+  latitude: decimal("latitude", { precision: 10, scale: 6 }), // For distance calculations
+  longitude: decimal("longitude", { precision: 10, scale: 6 }), // For distance calculations
   status: text("status").default("active").notNull(), // active, sold, removed
   createdAt: timestamp("created_at").defaultNow(),
 });

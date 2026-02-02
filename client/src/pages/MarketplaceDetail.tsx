@@ -13,7 +13,8 @@ import {
   User, 
   Mail, 
   DollarSign,
-  FileText
+  FileText,
+  MapPin
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -109,6 +110,12 @@ export default function MarketplaceDetail() {
                 <Clock className="h-3 w-3 mr-1" />
                 {listing.equipment.currentHours} hours
               </Badge>
+              {listing.location && (
+                <Badge variant="secondary">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {listing.location}
+                </Badge>
+              )}
               {listing.equipment.serialNumber && (
                 <Badge variant="outline">
                   SN: {listing.equipment.serialNumber}

@@ -27,8 +27,8 @@ export interface IStorage {
   createMaintenanceLog(userId: string, data: InsertMaintenanceLog): Promise<MaintenanceLog>;
   deleteMaintenanceLog(userId: string, id: number): Promise<void>;
 
-  // Marketplace - public listings visible to all, but create/remove scoped by userId
-  getMarketplaceListings(search?: string): Promise<(MarketplaceListing & { equipment: Equipment })[]>;
+  // Marketplace - listings visible to authenticated users, create/remove scoped by userId
+  getMarketplaceListings(search?: string, userLat?: number, userLng?: number, maxDistance?: number): Promise<(MarketplaceListing & { equipment: Equipment; distance?: number })[]>;
   getMarketplaceListing(id: number): Promise<MarketplaceListingResponse | undefined>;
   createMarketplaceListing(sellerId: string, sellerName: string, data: InsertMarketplaceListing): Promise<MarketplaceListing>;
   removeMarketplaceListing(sellerId: string, id: number): Promise<boolean>;
@@ -120,8 +120,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.userId, userId)));
   }
 
-  // Marketplace methods - listings are public
-  async getMarketplaceListings(search?: string): Promise<(MarketplaceListing & { equipment: Equipment })[]> {
+  // Marketplace methods - listings visible to authenticated users
+  async getMarketplaceListings(search?: string, userLat?: number, userLng?: number, maxDistance?: number): Promise<(MarketplaceListing & { equipment: Equipment; distance?: number })[]> {
     const conditions: SQL[] = [eq(marketplaceListings.status, 'active')];
     
     if (search) {
@@ -130,7 +130,8 @@ export class DatabaseStorage implements IStorage {
         or(
           ilike(equipment.name, searchPattern),
           ilike(equipment.make, searchPattern),
-          ilike(equipment.model, searchPattern)
+          ilike(equipment.model, searchPattern),
+          ilike(marketplaceListings.location, searchPattern)
         )!
       );
     }
@@ -147,7 +148,47 @@ export class DatabaseStorage implements IStorage {
       .where(whereClause)
       .orderBy(desc(marketplaceListings.createdAt));
     
-    return results.map(r => ({ ...r.listing, equipment: r.equipment }));
+    // Calculate distances if user location provided
+    let listingsWithDistance = results.map(r => {
+      let distance: number | undefined;
+      if (userLat && userLng && r.listing.latitude && r.listing.longitude) {
+        const listingLat = parseFloat(String(r.listing.latitude));
+        const listingLng = parseFloat(String(r.listing.longitude));
+        distance = this.calculateDistance(userLat, userLng, listingLat, listingLng);
+      }
+      return { ...r.listing, equipment: r.equipment, distance };
+    });
+    
+    // Filter by max distance if specified
+    if (maxDistance && userLat && userLng) {
+      listingsWithDistance = listingsWithDistance.filter(l => 
+        l.distance === undefined || l.distance <= maxDistance
+      );
+      // Sort by distance when filtering by distance
+      listingsWithDistance.sort((a, b) => {
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        return a.distance - b.distance;
+      });
+    }
+    
+    return listingsWithDistance;
+  }
+
+  // Haversine formula to calculate distance in miles between two coordinates
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 3959; // Earth's radius in miles
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c);
+  }
+
+  private toRad(deg: number): number {
+    return deg * (Math.PI / 180);
   }
 
   async getMarketplaceListing(id: number): Promise<MarketplaceListingResponse | undefined> {

@@ -193,14 +193,17 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // Marketplace Routes - listing is public, create/remove requires auth
-  app.get(api.marketplace.list.path, async (req, res) => {
+  // Marketplace Routes - all routes require authentication
+  app.get(api.marketplace.list.path, isAuthenticated, async (req, res) => {
     const search = req.query.search as string | undefined;
-    const listings = await storage.getMarketplaceListings(search);
+    const userLat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+    const userLng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
+    const maxDistance = req.query.distance ? parseInt(req.query.distance as string) : undefined;
+    const listings = await storage.getMarketplaceListings(search, userLat, userLng, maxDistance);
     res.json(listings);
   });
 
-  app.get(api.marketplace.get.path, async (req, res) => {
+  app.get(api.marketplace.get.path, isAuthenticated, async (req, res) => {
     const id = Number(req.params.id);
     const listing = await storage.getMarketplaceListing(id);
     if (!listing) {

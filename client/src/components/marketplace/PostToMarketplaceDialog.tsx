@@ -33,6 +33,7 @@ const postToMarketplaceSchema = z.object({
   ),
   description: z.string().optional(),
   contactInfo: z.string().min(1, "Contact information is required"),
+  location: z.string().min(1, "Location is required"),
 });
 
 type PostToMarketplaceFormData = z.infer<typeof postToMarketplaceSchema>;
@@ -58,16 +59,37 @@ export function PostToMarketplaceDialog({
       askingPrice: "",
       description: "",
       contactInfo: "",
+      location: "",
     },
   });
 
   const onSubmit = async (data: PostToMarketplaceFormData) => {
     try {
+      // Try to geocode the location for distance calculations
+      let latitude: string | null = null;
+      let longitude: string | null = null;
+      
+      try {
+        const geocodeResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.location)}&limit=1`
+        );
+        const geocodeData = await geocodeResponse.json();
+        if (geocodeData && geocodeData.length > 0) {
+          latitude = geocodeData[0].lat;
+          longitude = geocodeData[0].lon;
+        }
+      } catch (e) {
+        // Geocoding failed, continue without coordinates
+      }
+      
       await createListing.mutateAsync({
         equipmentId,
         askingPrice: data.askingPrice,
         description: data.description || null,
         contactInfo: data.contactInfo || null,
+        location: data.location || null,
+        latitude,
+        longitude,
         sellerName: null,
       });
       toast({
@@ -118,6 +140,26 @@ export function PostToMarketplaceDialog({
                       data-testid="input-listing-price"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="City, State (e.g., Austin, TX)"
+                      {...field}
+                      data-testid="input-listing-location"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Where the equipment is located
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

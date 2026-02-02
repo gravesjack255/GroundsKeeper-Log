@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { useMarketplaceListings } from "@/hooks/use-marketplace";
@@ -7,17 +7,81 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, ShoppingCart, Calendar, Wrench } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, ShoppingCart, Calendar, Wrench, MapPin, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Marketplace() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const { data: listings, isLoading } = useMarketplaceListings(debouncedSearch);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [maxDistance, setMaxDistance] = useState<number | undefined>(undefined);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const { toast } = useToast();
+  
+  const { data: listings, isLoading } = useMarketplaceListings({
+    search: debouncedSearch,
+    lat: userLocation?.lat,
+    lng: userLocation?.lng,
+    distance: maxDistance,
+  });
 
   const handleSearch = (value: string) => {
     setSearch(value);
     // Debounce search
     setTimeout(() => setDebouncedSearch(value), 300);
+  };
+
+  const getMyLocation = () => {
+    setLocationLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setLocationLoading(false);
+          toast({
+            title: "Location detected",
+            description: "Now showing distance to listings",
+          });
+        },
+        (error) => {
+          setLocationLoading(false);
+          toast({
+            title: "Location unavailable",
+            description: "Could not get your location. Please try again.",
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      setLocationLoading(false);
+      toast({
+        title: "Location not supported",
+        description: "Your browser doesn't support geolocation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDistanceChange = (value: string) => {
+    if (value === "any") {
+      setMaxDistance(undefined);
+    } else {
+      setMaxDistance(parseInt(value));
+      // Auto-get location if filtering by distance
+      if (!userLocation) {
+        getMyLocation();
+      }
+    }
   };
 
   return (
@@ -36,15 +100,49 @@ export default function Marketplace() {
             </div>
           </div>
 
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, make, or model..."
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-              data-testid="input-marketplace-search"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, make, model, or location..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10"
+                data-testid="input-marketplace-search"
+              />
+            </div>
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={getMyLocation}
+                disabled={locationLoading}
+                data-testid="button-get-location"
+              >
+                {locationLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+                <span className="ml-2">{userLocation ? "Location Set" : "Use My Location"}</span>
+              </Button>
+              <Select
+                value={maxDistance?.toString() || "any"}
+                onValueChange={handleDistanceChange}
+              >
+                <SelectTrigger className="w-36" data-testid="select-distance">
+                  <SelectValue placeholder="Distance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any Distance</SelectItem>
+                  <SelectItem value="25">Within 25 mi</SelectItem>
+                  <SelectItem value="50">Within 50 mi</SelectItem>
+                  <SelectItem value="100">Within 100 mi</SelectItem>
+                  <SelectItem value="250">Within 250 mi</SelectItem>
+                  <SelectItem value="500">Within 500 mi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {isLoading ? (
@@ -84,10 +182,23 @@ export default function Marketplace() {
                         <p className="text-sm text-muted-foreground">
                           {listing.equipment.make} {listing.equipment.model} • {listing.equipment.year}
                         </p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Wrench className="h-4 w-4" />
-                          <span>{listing.equipment.currentHours} hrs</span>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Wrench className="h-4 w-4" />
+                            <span>{listing.equipment.currentHours} hrs</span>
+                          </div>
+                          {listing.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              <span className="truncate max-w-24">{listing.location}</span>
+                            </div>
+                          )}
                         </div>
+                        {listing.distance !== undefined && (
+                          <Badge variant="outline" className="w-fit">
+                            {listing.distance} miles away
+                          </Badge>
+                        )}
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-xl font-bold text-primary" data-testid={`text-listing-price-${listing.id}`}>
                             ${Number(listing.askingPrice).toLocaleString()}

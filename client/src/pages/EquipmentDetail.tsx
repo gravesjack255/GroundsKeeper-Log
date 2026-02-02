@@ -66,14 +66,6 @@ export default function EquipmentDetail() {
   };
 
   const maintenanceSpend = getMaintenanceSpend();
-  
-  const getSpendLabel = () => {
-    switch (spendPeriod) {
-      case 'ytd': return 'Year-to-Date';
-      case '6months': return 'Last 6 Months';
-      case 'all': return 'All Time';
-    }
-  };
 
   if (isLoading) {
     return (
@@ -253,7 +245,6 @@ export default function EquipmentDetail() {
                     <Button 
                       variant={spendPeriod === 'ytd' ? 'default' : 'ghost'} 
                       size="sm"
-                      className="h-6 px-2 text-xs"
                       onClick={() => setSpendPeriod('ytd')}
                       data-testid="button-equipment-spend-ytd"
                     >
@@ -262,7 +253,6 @@ export default function EquipmentDetail() {
                     <Button 
                       variant={spendPeriod === '6months' ? 'default' : 'ghost'} 
                       size="sm"
-                      className="h-6 px-2 text-xs"
                       onClick={() => setSpendPeriod('6months')}
                       data-testid="button-equipment-spend-6months"
                     >
@@ -271,7 +261,6 @@ export default function EquipmentDetail() {
                     <Button 
                       variant={spendPeriod === 'all' ? 'default' : 'ghost'} 
                       size="sm"
-                      className="h-6 px-2 text-xs"
                       onClick={() => setSpendPeriod('all')}
                       data-testid="button-equipment-spend-all"
                     >

@@ -8,7 +8,7 @@ import { ArrowRight, Wrench, CheckCircle2, AlertTriangle, TrendingUp, DollarSign
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { format, subMonths, startOfYear, isAfter } from "date-fns";
+import { format, subMonths, startOfYear } from "date-fns";
 import { AddEquipmentDialog } from "@/components/equipment/AddEquipmentDialog";
 
 type TimePeriod = 'ytd' | '6months' | 'monthly';

@@ -81,6 +81,11 @@ Preferred communication style: Simple, everyday language.
 - AddEquipmentDialog and EditEquipmentDialog both support photo upload
 - Client and server-side validation for file size (10MB max) and types (JPEG, PNG, GIF, WebP)
 
+### February 2026 - Time Period Chart Options
+- Dashboard maintenance cost chart now has selectable time periods: Year-to-Date, 6 Months, Monthly (weekly breakdown)
+- Equipment Detail page includes new "Maintenance Spend" card with YTD, 6 Month, and All Time filters
+- Chart titles update dynamically based on selected period
+
 ### Development Tools
 - **Vite**: Frontend build tool with React plugin
 - **esbuild**: Server bundling for production

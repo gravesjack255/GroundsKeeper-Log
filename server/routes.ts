@@ -6,6 +6,7 @@ import { z } from "zod";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
 // Configure multer for image uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -44,11 +45,15 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  // Setup authentication FIRST (before other routes)
+  await setupAuth(app);
+  registerAuthRoutes(app);
+
   // Serve uploaded images
   app.use("/uploads", (await import("express")).default.static(uploadDir));
 
-  // Image upload endpoint with error handling
-  app.post("/api/upload", (req, res, next) => {
+  // Image upload endpoint with error handling (protected)
+  app.post("/api/upload", isAuthenticated, (req, res, next) => {
     upload.single("image")(req, res, (err) => {
       if (err) {
         if (err instanceof multer.MulterError) {
@@ -67,15 +72,15 @@ export async function registerRoutes(
     });
   });
 
-  // Equipment Routes
-  app.get(api.equipment.list.path, async (req, res) => {
+  // Equipment Routes (protected)
+  app.get(api.equipment.list.path, isAuthenticated, async (req, res) => {
     const search = req.query.search as string | undefined;
     const status = req.query.status as string | undefined;
     const items = await storage.getEquipmentList(search, status);
     res.json(items);
   });
 
-  app.get(api.equipment.get.path, async (req, res) => {
+  app.get(api.equipment.get.path, isAuthenticated, async (req, res) => {
     const id = Number(req.params.id);
     const item = await storage.getEquipment(id);
     if (!item) {
@@ -84,7 +89,7 @@ export async function registerRoutes(
     res.json(item);
   });
 
-  app.post(api.equipment.create.path, async (req, res) => {
+  app.post(api.equipment.create.path, isAuthenticated, async (req, res) => {
     try {
       const input = api.equipment.create.input.parse(req.body);
       const item = await storage.createEquipment(input);
@@ -100,7 +105,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch(api.equipment.update.path, async (req, res) => {
+  app.patch(api.equipment.update.path, isAuthenticated, async (req, res) => {
     const id = Number(req.params.id);
     try {
       const input = api.equipment.update.input.parse(req.body);
@@ -115,20 +120,20 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.equipment.delete.path, async (req, res) => {
+  app.delete(api.equipment.delete.path, isAuthenticated, async (req, res) => {
     const id = Number(req.params.id);
     await storage.deleteEquipment(id);
     res.status(204).send();
   });
 
-  // Maintenance Routes
-  app.get(api.maintenance.list.path, async (req, res) => {
+  // Maintenance Routes (protected)
+  app.get(api.maintenance.list.path, isAuthenticated, async (req, res) => {
     const equipmentId = req.query.equipmentId ? Number(req.query.equipmentId) : undefined;
     const logs = await storage.getMaintenanceLogs(equipmentId);
     res.json(logs);
   });
 
-  app.post(api.maintenance.create.path, async (req, res) => {
+  app.post(api.maintenance.create.path, isAuthenticated, async (req, res) => {
     try {
       const input = api.maintenance.create.input.parse(req.body);
       const log = await storage.createMaintenanceLog(input);
@@ -159,7 +164,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.maintenance.delete.path, async (req, res) => {
+  app.delete(api.maintenance.delete.path, isAuthenticated, async (req, res) => {
     const id = Number(req.params.id);
     await storage.deleteMaintenanceLog(id);
     res.status(204).send();

@@ -25,7 +25,7 @@ export function useCreateMarketplaceListing() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: InsertMarketplaceListing) =>
-      apiRequest("/api/marketplace", "POST", data),
+      apiRequest("POST", "/api/marketplace", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/marketplace'] });
     },
@@ -36,7 +36,7 @@ export function useRemoveMarketplaceListing() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      apiRequest(`/api/marketplace/${id}`, "DELETE"),
+      apiRequest("DELETE", `/api/marketplace/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/marketplace'] });
     },

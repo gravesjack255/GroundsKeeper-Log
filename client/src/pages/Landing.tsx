@@ -41,7 +41,7 @@ export default function Landing() {
               <div className="flex items-center gap-6 text-sm text-muted-foreground pt-4">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-emerald-600" />
-                  <span>Free forever plan</span>
+                  <span>Secure login</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-emerald-600" />

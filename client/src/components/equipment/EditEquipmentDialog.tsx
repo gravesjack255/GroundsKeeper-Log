@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertEquipmentSchema, type InsertEquipment } from "@shared/schema";
-import { useCreateEquipment } from "@/hooks/use-equipment";
+import { insertEquipmentSchema, type Equipment, type InsertEquipment } from "@shared/schema";
+import { useUpdateEquipment } from "@/hooks/use-equipment";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,55 +28,92 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, ReactNode, useEffect } from "react";
 import { ImageUpload } from "./ImageUpload";
 
-export function AddEquipmentDialog() {
+interface EditEquipmentDialogProps {
+  equipment: Equipment;
+  trigger?: ReactNode;
+}
+
+export function EditEquipmentDialog({ equipment, trigger }: EditEquipmentDialogProps) {
   const [open, setOpen] = useState(false);
-  const createEquipment = useCreateEquipment();
+  const updateEquipment = useUpdateEquipment();
   
   const form = useForm<InsertEquipment>({
     resolver: zodResolver(insertEquipmentSchema),
     defaultValues: {
-      name: "",
-      make: "",
-      model: "",
-      year: new Date().getFullYear(),
-      serialNumber: "",
-      currentHours: "0",
-      status: "active",
-      notes: "",
-      imageUrl: "",
+      name: equipment.name,
+      make: equipment.make,
+      model: equipment.model,
+      year: equipment.year,
+      serialNumber: equipment.serialNumber || "",
+      currentHours: String(equipment.currentHours),
+      status: equipment.status,
+      notes: equipment.notes || "",
+      imageUrl: equipment.imageUrl || "",
     },
   });
 
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: equipment.name,
+        make: equipment.make,
+        model: equipment.model,
+        year: equipment.year,
+        serialNumber: equipment.serialNumber || "",
+        currentHours: String(equipment.currentHours),
+        status: equipment.status,
+        notes: equipment.notes || "",
+        imageUrl: equipment.imageUrl || "",
+      });
+    }
+  }, [open, equipment, form]);
+
   function onSubmit(data: InsertEquipment) {
-    createEquipment.mutate(data, {
-      onSuccess: () => {
-        setOpen(false);
-        form.reset();
-      },
-    });
+    updateEquipment.mutate(
+      { id: equipment.id, ...data },
+      {
+        onSuccess: () => {
+          setOpen(false);
+        },
+      }
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30">
-          <Plus className="h-4 w-4" /> Add Equipment
-        </Button>
+        {trigger || <Button variant="outline">Edit Details</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Equipment</DialogTitle>
+          <DialogTitle>Edit Equipment</DialogTitle>
           <DialogDescription>
-            Enter the details for the new machine. All fields marked with * are required.
+            Update the details for {equipment.name}. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Equipment Photo</FormLabel>
+                  <FormControl>
+                    <ImageUpload
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -129,7 +166,7 @@ export function AddEquipmentDialog() {
                     <FormControl>
                       <Input 
                         type="number" 
-                        {...field}
+                        {...field} 
                         value={field.value || ''}
                         onChange={e => {
                           const val = e.target.value;
@@ -180,7 +217,7 @@ export function AddEquipmentDialog() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -196,23 +233,6 @@ export function AddEquipmentDialog() {
                   </FormItem>
                 )}
               />
-              
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem className="col-span-1 md:col-span-2">
-                     <FormLabel>Equipment Photo (Optional)</FormLabel>
-                     <FormControl>
-                       <ImageUpload
-                         value={field.value}
-                         onChange={field.onChange}
-                       />
-                     </FormControl>
-                     <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
@@ -221,7 +241,7 @@ export function AddEquipmentDialog() {
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Any initial notes about condition..." {...field} value={field.value || ''} />
+                      <Textarea placeholder="Any notes about condition..." {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,8 +251,8 @@ export function AddEquipmentDialog() {
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={createEquipment.isPending}>
-                {createEquipment.isPending ? "Adding..." : "Add Equipment"}
+              <Button type="submit" disabled={updateEquipment.isPending} data-testid="button-save-equipment">
+                {updateEquipment.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

@@ -69,6 +69,17 @@ Preferred communication style: Simple, everyday language.
 - **recharts**: Data visualization for maintenance costs
 - **date-fns**: Date formatting utilities
 - **lucide-react**: Icon library
+- **multer**: File upload handling for equipment photos
+
+## Recent Changes
+
+### February 2026 - Photo Upload Feature
+- Added file upload capability for equipment photos (from device photo library instead of URL input)
+- Backend: `/api/upload` endpoint handles multipart form data with multer
+- Static file serving from `/uploads` directory for uploaded images
+- ImageUpload component with drag-and-drop area, preview, and removal
+- AddEquipmentDialog and EditEquipmentDialog both support photo upload
+- Client and server-side validation for file size (10MB max) and types (JPEG, PNG, GIF, WebP)
 
 ### Development Tools
 - **Vite**: Frontend build tool with React plugin

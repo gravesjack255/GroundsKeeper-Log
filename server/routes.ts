@@ -3,11 +3,69 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for image uploads
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage_config = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `equipment-${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage: storage_config,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // Serve uploaded images
+  app.use("/uploads", (await import("express")).default.static(uploadDir));
+
+  // Image upload endpoint with error handling
+  app.post("/api/upload", (req, res, next) => {
+    upload.single("image")(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: "File too large. Maximum size is 10MB." });
+          }
+          return res.status(400).json({ message: `Upload error: ${err.message}` });
+        }
+        return res.status(400).json({ message: err.message || "Invalid file type" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+      const imageUrl = `/uploads/${req.file.filename}`;
+      res.json({ imageUrl });
+    });
+  });
 
   // Equipment Routes
   app.get(api.equipment.list.path, async (req, res) => {

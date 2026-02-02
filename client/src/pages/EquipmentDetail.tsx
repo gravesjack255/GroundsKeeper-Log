@@ -1,6 +1,6 @@
 import { useRoute } from "wouter";
 import { Header } from "@/components/layout/Header";
-import { useEquipmentDetail, useUpdateEquipment, useDeleteEquipment } from "@/hooks/use-equipment";
+import { useEquipmentDetail, useDeleteEquipment } from "@/hooks/use-equipment";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
   Calendar,
-  Clock,
   Settings,
   Trash2,
   Wrench,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { LogMaintenanceDialog } from "@/components/maintenance/LogMaintenanceDialog";
+import { EditEquipmentDialog } from "@/components/equipment/EditEquipmentDialog";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -32,10 +32,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function EquipmentDetail() {
   const [, params] = useRoute("/equipment/:id");
@@ -44,11 +40,6 @@ export default function EquipmentDetail() {
   
   const { data: equipment, isLoading } = useEquipmentDetail(id);
   const deleteEquipment = useDeleteEquipment();
-  const updateEquipment = useUpdateEquipment();
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [editHours, setEditHours] = useState("");
-  const [editStatus, setEditStatus] = useState("");
 
   if (isLoading) {
     return (
@@ -81,22 +72,6 @@ export default function EquipmentDetail() {
     deleteEquipment.mutate(id, {
       onSuccess: () => setLocation('/equipment')
     });
-  };
-
-  const handleUpdate = () => {
-    updateEquipment.mutate({
-      id,
-      currentHours: editHours ? editHours : equipment.currentHours,
-      status: editStatus ? editStatus : equipment.status
-    }, {
-      onSuccess: () => setIsEditing(false)
-    });
-  };
-
-  const startEdit = () => {
-    setEditHours(equipment.currentHours.toString());
-    setEditStatus(equipment.status);
-    setIsEditing(true);
   };
 
   return (
@@ -171,16 +146,14 @@ export default function EquipmentDetail() {
                 </AlertDialogContent>
               </AlertDialog>
               
-              {isEditing ? (
-                 <div className="flex gap-2 bg-card p-2 rounded-lg border shadow-sm absolute right-4 md:static z-10">
-                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleUpdate}>Save</Button>
-                 </div>
-              ) : (
-                <Button variant="outline" onClick={startEdit}>
-                  <Settings className="h-4 w-4 mr-2" /> Edit Details
-                </Button>
-              )}
+              <EditEquipmentDialog
+                equipment={equipment}
+                trigger={
+                  <Button variant="outline" data-testid="button-edit-equipment">
+                    <Settings className="h-4 w-4 mr-2" /> Edit Details
+                  </Button>
+                }
+              />
               
               <LogMaintenanceDialog equipment={equipment} />
             </div>
@@ -201,21 +174,10 @@ export default function EquipmentDetail() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Current Hours</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <Input 
-                        type="number" 
-                        value={editHours} 
-                        onChange={(e) => setEditHours(e.target.value)} 
-                        className="h-8"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-end gap-2">
-                      <div className="text-2xl font-bold font-display">{Number(equipment.currentHours).toLocaleString()}</div>
-                      <span className="text-sm text-muted-foreground mb-1">hrs</span>
-                    </div>
-                  )}
+                  <div className="flex items-end gap-2">
+                    <div className="text-2xl font-bold font-display">{Number(equipment.currentHours).toLocaleString()}</div>
+                    <span className="text-sm text-muted-foreground mb-1">hrs</span>
+                  </div>
                 </CardContent>
               </Card>
               
@@ -224,27 +186,14 @@ export default function EquipmentDetail() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Status</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isEditing ? (
-                    <Select value={editStatus} onValueChange={setEditStatus}>
-                      <SelectTrigger className="h-8">
-                         <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="retired">Retired</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {equipment.status === 'active' ? (
-                        <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-                      ) : (
-                        <AlertTriangle className="h-6 w-6 text-amber-600" />
-                      )}
-                      <div className="text-lg font-semibold capitalize">{equipment.status}</div>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {equipment.status === 'active' ? (
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="h-6 w-6 text-amber-600" />
+                    )}
+                    <div className="text-lg font-semibold capitalize">{equipment.status}</div>
+                  </div>
                 </CardContent>
               </Card>
 

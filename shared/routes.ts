@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertEquipmentSchema, insertMaintenanceLogSchema, equipment, maintenanceLogs } from './schema';
+import { insertEquipmentSchema, insertMaintenanceLogSchema, insertMarketplaceListingSchema, equipment, maintenanceLogs, marketplaceListings } from './schema';
 
 // ============================================
 // SHARED ERROR SCHEMAS
@@ -91,6 +91,44 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/maintenance/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  marketplace: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/marketplace',
+      input: z.object({
+        search: z.string().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof marketplaceListings.$inferSelect & { equipment: typeof equipment.$inferSelect }>()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/marketplace/:id',
+      responses: {
+        200: z.custom<typeof marketplaceListings.$inferSelect & { equipment: typeof equipment.$inferSelect; maintenanceLogs: typeof maintenanceLogs.$inferSelect[] }>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/marketplace',
+      input: insertMarketplaceListingSchema,
+      responses: {
+        201: z.custom<typeof marketplaceListings.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    remove: {
+      method: 'DELETE' as const,
+      path: '/api/marketplace/:id',
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,

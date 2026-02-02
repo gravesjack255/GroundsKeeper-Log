@@ -35,9 +35,22 @@ export const maintenanceLogs = pgTable("maintenance_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const marketplaceListings = pgTable("marketplace_listings", {
+  id: serial("id").primaryKey(),
+  equipmentId: integer("equipment_id").references(() => equipment.id).notNull(),
+  sellerId: text("seller_id").notNull(), // User who listed the equipment
+  sellerName: text("seller_name"), // Display name for the seller
+  askingPrice: decimal("asking_price", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"), // Additional listing notes
+  contactInfo: text("contact_info"), // How buyers can reach the seller
+  status: text("status").default("active").notNull(), // active, sold, removed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === RELATIONS ===
 export const equipmentRelations = relations(equipment, ({ many }) => ({
   logs: many(maintenanceLogs),
+  listings: many(marketplaceListings),
 }));
 
 export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one }) => ({
@@ -47,25 +60,40 @@ export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one }) => 
   }),
 }));
 
+export const marketplaceListingsRelations = relations(marketplaceListings, ({ one }) => ({
+  equipment: one(equipment, {
+    fields: [marketplaceListings.equipmentId],
+    references: [equipment.id],
+  }),
+}));
+
 // === BASE SCHEMAS ===
 // Omit userId as it's set server-side from authenticated user
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true, userId: true, createdAt: true });
 export const insertMaintenanceLogSchema = createInsertSchema(maintenanceLogs).omit({ id: true, userId: true, createdAt: true });
+export const insertMarketplaceListingSchema = createInsertSchema(marketplaceListings).omit({ id: true, sellerId: true, createdAt: true, status: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 export type Equipment = typeof equipment.$inferSelect;
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
 export type MaintenanceLog = typeof maintenanceLogs.$inferSelect;
 export type InsertMaintenanceLog = z.infer<typeof insertMaintenanceLogSchema>;
+export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
+export type InsertMarketplaceListing = z.infer<typeof insertMarketplaceListingSchema>;
 
 // Request types
 export type CreateEquipmentRequest = InsertEquipment;
 export type UpdateEquipmentRequest = Partial<InsertEquipment>;
 export type CreateMaintenanceLogRequest = InsertMaintenanceLog;
+export type CreateMarketplaceListingRequest = InsertMarketplaceListing;
 
 // Response types
 export type EquipmentResponse = Equipment & { logs?: MaintenanceLog[] };
 export type MaintenanceLogResponse = MaintenanceLog & { equipmentName?: string };
+export type MarketplaceListingResponse = MarketplaceListing & { 
+  equipment: Equipment;
+  maintenanceLogs: MaintenanceLog[];
+};
 
 // Query params
 export interface EquipmentQueryParams {

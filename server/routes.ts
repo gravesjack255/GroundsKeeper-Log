@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -7,6 +7,17 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+
+// Helper to extract user info from session
+function getUserFromRequest(req: Request) {
+  const user = req.user as any;
+  return {
+    id: user?.claims?.sub as string,
+    email: user?.claims?.email as string | undefined,
+    firstName: user?.claims?.first_name as string | undefined,
+    lastName: user?.claims?.last_name as string | undefined,
+  };
+}
 
 // Configure multer for image uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -74,7 +85,7 @@ export async function registerRoutes(
 
   // Equipment Routes (protected)
   app.get(api.equipment.list.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     const search = req.query.search as string | undefined;
     const status = req.query.status as string | undefined;
     const items = await storage.getEquipmentList(userId, search, status);
@@ -82,7 +93,7 @@ export async function registerRoutes(
   });
 
   app.get(api.equipment.get.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     const id = Number(req.params.id);
     const item = await storage.getEquipment(userId, id);
     if (!item) {
@@ -92,7 +103,7 @@ export async function registerRoutes(
   });
 
   app.post(api.equipment.create.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     try {
       const input = api.equipment.create.input.parse(req.body);
       const item = await storage.createEquipment(userId, input);
@@ -109,7 +120,7 @@ export async function registerRoutes(
   });
 
   app.patch(api.equipment.update.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     const id = Number(req.params.id);
     try {
       const input = api.equipment.update.input.parse(req.body);
@@ -125,7 +136,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.equipment.delete.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     const id = Number(req.params.id);
     await storage.deleteEquipment(userId, id);
     res.status(204).send();
@@ -133,14 +144,14 @@ export async function registerRoutes(
 
   // Maintenance Routes (protected)
   app.get(api.maintenance.list.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     const equipmentId = req.query.equipmentId ? Number(req.query.equipmentId) : undefined;
     const logs = await storage.getMaintenanceLogs(userId, equipmentId);
     res.json(logs);
   });
 
   app.post(api.maintenance.create.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     try {
       const input = api.maintenance.create.input.parse(req.body);
       
@@ -176,13 +187,68 @@ export async function registerRoutes(
   });
 
   app.delete(api.maintenance.delete.path, isAuthenticated, async (req, res) => {
-    const userId = req.user!.id;
+    const { id: userId } = getUserFromRequest(req);
     const id = Number(req.params.id);
     await storage.deleteMaintenanceLog(userId, id);
     res.status(204).send();
   });
 
-  // No seed data in multi-user mode - each user starts fresh
+  // Marketplace Routes - listing is public, create/remove requires auth
+  app.get(api.marketplace.list.path, async (req, res) => {
+    const search = req.query.search as string | undefined;
+    const listings = await storage.getMarketplaceListings(search);
+    res.json(listings);
+  });
+
+  app.get(api.marketplace.get.path, async (req, res) => {
+    const id = Number(req.params.id);
+    const listing = await storage.getMarketplaceListing(id);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+    res.json(listing);
+  });
+
+  app.post(api.marketplace.create.path, isAuthenticated, async (req, res) => {
+    const { id: userId, firstName, lastName, email } = getUserFromRequest(req);
+    const sellerName = `${firstName || ''} ${lastName || ''}`.trim() || email || 'Anonymous';
+    try {
+      const input = api.marketplace.create.input.parse(req.body);
+      
+      // Verify equipment belongs to user
+      const equipmentItem = await storage.getEquipment(userId, input.equipmentId);
+      if (!equipmentItem) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+      
+      // Check if already listed
+      const existingListing = await storage.getActiveListingForEquipment(input.equipmentId);
+      if (existingListing) {
+        return res.status(400).json({ message: "Equipment is already listed on marketplace" });
+      }
+      
+      const listing = await storage.createMarketplaceListing(userId, sellerName, input);
+      res.status(201).json(listing);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.marketplace.remove.path, isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const id = Number(req.params.id);
+    const removed = await storage.removeMarketplaceListing(userId, id);
+    if (!removed) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+    res.status(204).send();
+  });
 
   return httpServer;
 }

@@ -33,10 +33,12 @@ export default function MarketplaceDetail() {
   const [newMessage, setNewMessage] = useState('');
   const sendMessage = useSendMessage();
   
-  const isOwnListing = listing?.sellerId === user?.id;
+  const isOwnListing = !!(listing && user && listing.sellerId === user.id);
+  const sellerId = listing?.sellerId || '';
+  const shouldFetchMessages = !isOwnListing && !!listingId && !!sellerId;
   const { data: messages } = useMessages(
-    listingId,
-    isOwnListing ? '' : (listing?.sellerId || '')
+    shouldFetchMessages ? listingId : 0,
+    shouldFetchMessages ? sellerId : ''
   );
 
   const handleSendMessage = () => {

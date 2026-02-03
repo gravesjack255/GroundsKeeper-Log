@@ -203,6 +203,13 @@ export async function registerRoutes(
     res.json(listings);
   });
 
+  // User's own listings (must be before :id route to avoid matching)
+  app.get("/api/marketplace/my-listings", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const listings = await storage.getUserListings(userId);
+    res.json(listings);
+  });
+
   app.get(api.marketplace.get.path, isAuthenticated, async (req, res) => {
     const id = Number(req.params.id);
     const listing = await storage.getMarketplaceListing(id);
@@ -251,13 +258,6 @@ export async function registerRoutes(
       return res.status(404).json({ message: "Listing not found" });
     }
     res.status(204).send();
-  });
-
-  // User's own listings
-  app.get("/api/marketplace/my-listings", isAuthenticated, async (req, res) => {
-    const { id: userId } = getUserFromRequest(req);
-    const listings = await storage.getUserListings(userId);
-    res.json(listings);
   });
 
   // Update listing status (mark as sold)
@@ -313,6 +313,15 @@ export async function registerRoutes(
       const listing = await storage.getMarketplaceListing(listingId);
       if (!listing) {
         return res.status(404).json({ message: "Listing not found" });
+      }
+      
+      // Validate messaging rules: receiver must be the seller and sender cannot be the seller
+      if (receiverId !== listing.sellerId) {
+        return res.status(400).json({ message: "Can only message the seller of this listing" });
+      }
+      
+      if (userId === listing.sellerId) {
+        return res.status(400).json({ message: "Cannot send message to your own listing" });
       }
       
       const message = await storage.createMessage(userId, senderName, {

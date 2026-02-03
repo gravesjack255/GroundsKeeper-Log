@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, X, Upload, Loader2 } from "lucide-react";
+import { Camera, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ImageUploadProps {
@@ -20,8 +20,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
 
     setError(null);
 
-    // Client-side validation
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       setError("File too large. Maximum size is 10MB.");
       return;
@@ -36,21 +35,34 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     setIsUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const res = await fetch("/api/upload", {
+      const urlRes = await fetch("/api/uploads/request-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: file.name,
+          size: file.size,
+          contentType: file.type,
+        }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Upload failed");
+      if (!urlRes.ok) {
+        const data = await urlRes.json();
+        throw new Error(data.error || "Failed to get upload URL");
       }
 
-      const data = await res.json();
-      onChange(data.imageUrl);
+      const { uploadURL, objectPath } = await urlRes.json();
+
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Upload failed");
+      }
+
+      onChange(objectPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

@@ -110,7 +110,8 @@ export default function MyListings() {
                             <img
                               src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                               alt={listing.equipment.name}
-                              className="w-full md:w-32 h-24 object-cover rounded-md"
+                              className="w-full md:w-32 h-24 object-cover aspect-video rounded-lg bg-muted"
+                              style={{ aspectRatio: '16/9' }}
                             />
                           ) : (
                             <div className="w-full md:w-32 h-24 bg-muted rounded-md flex items-center justify-center">
@@ -208,7 +209,8 @@ export default function MyListings() {
                             <img
                               src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                               alt={listing.equipment.name}
-                              className="w-full md:w-32 h-24 object-cover rounded-md grayscale"
+                              className="w-full md:w-32 h-24 object-cover aspect-video rounded-lg bg-muted grayscale"
+                              style={{ aspectRatio: '16/9' }}
                             />
                           ) : (
                             <div className="w-full md:w-32 h-24 bg-muted rounded-md flex items-center justify-center">

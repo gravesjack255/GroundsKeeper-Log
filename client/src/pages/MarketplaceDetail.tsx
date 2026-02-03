@@ -119,7 +119,8 @@ export default function MarketplaceDetail() {
             <img
               src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
               alt={listing.equipment.name}
-              className="w-full h-80 object-cover rounded-lg"
+              className="w-full h-80 object-cover aspect-video rounded-lg bg-muted"
+              style={{ aspectRatio: '16/9' }}
             />
           ) : (
             <div className="w-full h-80 bg-muted rounded-lg flex items-center justify-center">

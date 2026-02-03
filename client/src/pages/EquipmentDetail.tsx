@@ -119,7 +119,8 @@ export default function EquipmentDetail() {
                   <img
                     src={equipment.imageUrl.startsWith('/objects/uploads/') ? equipment.imageUrl : `/objects/uploads/${equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                     alt={equipment.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover aspect-video rounded-lg bg-muted"
+                    style={{ aspectRatio: '16/9' }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground/20">

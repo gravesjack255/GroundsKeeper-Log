@@ -30,7 +30,8 @@ export function EquipmentCard({ equipment }: EquipmentCardProps) {
               <img
                 src={equipment.imageUrl.startsWith('/objects/uploads/') ? equipment.imageUrl : `/objects/uploads/${equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                 alt={equipment.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover aspect-video rounded-lg bg-muted transition-transform duration-500 group-hover:scale-105"
+                style={{ aspectRatio: '16/9' }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">

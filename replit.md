@@ -113,6 +113,27 @@ Preferred communication style: Simple, everyday language.
 - Listings show equipment details, price, seller info, location, distance, and complete maintenance history
 - Data isolation: users can only create/remove their own listings
 
+### February 2026 - Messaging & Listing Management
+- In-app messaging system for buyer-seller communication
+- Database: `messages` table with listingId, senderId, receiverId, senderName, content, isRead, createdAt
+- Listing status management: active, sold, removed states
+- My Listings page (/my-listings) for managing posted equipment:
+  - View all your marketplace listings
+  - Mark items as sold or relist sold items
+  - Delete listings from marketplace
+- Messages/Inbox page (/messages) for conversations:
+  - View all conversations grouped by listing and user
+  - Message threading with 5-second polling for new messages
+  - Unread message count badge in header dropdown
+- Marketplace listing detail page messaging:
+  - Buyers can send messages directly to sellers
+  - Sellers see "This is your listing" message instead of contact form
+  - Link to existing conversations if one exists
+- Header updates:
+  - Messages link in user dropdown with unread badge
+  - My Listings link in user dropdown
+- Security: Server validates messaging rules (receiver must be seller, sender cannot be seller)
+
 ### Development Tools
 - **Vite**: Frontend build tool with React plugin
 - **esbuild**: Server bundling for production

@@ -117,7 +117,7 @@ export default function MarketplaceDetail() {
         <div className="grid md:grid-cols-2 gap-6">
           {listing.equipment.imageUrl ? (
             <img
-              src={listing.equipment.imageUrl}
+              src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
               alt={listing.equipment.name}
               className="w-full h-80 object-cover rounded-lg"
             />

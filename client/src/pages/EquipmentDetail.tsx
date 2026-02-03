@@ -116,7 +116,11 @@ export default function EquipmentDetail() {
             <div className="flex items-start gap-6">
               <div className="h-24 w-24 md:h-32 md:w-32 rounded-xl bg-secondary/50 overflow-hidden border flex-shrink-0">
                 {equipment.imageUrl ? (
-                  <img src={equipment.imageUrl} alt={equipment.name} className="w-full h-full object-cover" />
+                  <img
+                    src={equipment.imageUrl.startsWith('/objects/uploads/') ? equipment.imageUrl : `/objects/uploads/${equipment.imageUrl.replace(/^.*uploads\//, '')}`}
+                    alt={equipment.name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground/20">
                     {equipment.make.charAt(0)}

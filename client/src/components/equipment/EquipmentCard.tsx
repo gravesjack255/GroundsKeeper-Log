@@ -27,8 +27,8 @@ export function EquipmentCard({ equipment }: EquipmentCardProps) {
         <div className="cursor-pointer">
           <div className="aspect-video w-full bg-secondary/50 relative overflow-hidden">
             {equipment.imageUrl ? (
-              <img 
-                src={equipment.imageUrl} 
+              <img
+                src={equipment.imageUrl.startsWith('/objects/uploads/') ? equipment.imageUrl : `/objects/uploads/${equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                 alt={equipment.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />

@@ -165,7 +165,7 @@ export default function Marketplace() {
                     <CardContent className="p-4">
                       {listing.equipment.imageUrl ? (
                         <img
-                          src={listing.equipment.imageUrl}
+                          src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                           alt={listing.equipment.name}
                           className="h-40 w-full object-cover rounded-md mb-4"
                         />

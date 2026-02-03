@@ -108,7 +108,7 @@ export default function MyListings() {
                         <div className="flex flex-col md:flex-row gap-4">
                           {listing.equipment.imageUrl ? (
                             <img
-                              src={listing.equipment.imageUrl}
+                              src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                               alt={listing.equipment.name}
                               className="w-full md:w-32 h-24 object-cover rounded-md"
                             />
@@ -206,7 +206,7 @@ export default function MyListings() {
                         <div className="flex flex-col md:flex-row gap-4">
                           {listing.equipment.imageUrl ? (
                             <img
-                              src={listing.equipment.imageUrl}
+                              src={listing.equipment.imageUrl.startsWith('/objects/uploads/') ? listing.equipment.imageUrl : `/objects/uploads/${listing.equipment.imageUrl.replace(/^.*uploads\//, '')}`}
                               alt={listing.equipment.name}
                               className="w-full md:w-32 h-24 object-cover rounded-md grayscale"
                             />

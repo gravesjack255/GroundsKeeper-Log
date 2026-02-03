@@ -50,6 +50,17 @@ export const marketplaceListings = pgTable("marketplace_listings", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  listingId: integer("listing_id").references(() => marketplaceListings.id).notNull(),
+  senderId: text("sender_id").notNull(),
+  senderName: text("sender_name"),
+  receiverId: text("receiver_id").notNull(),
+  content: text("content").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === RELATIONS ===
 export const equipmentRelations = relations(equipment, ({ many }) => ({
   logs: many(maintenanceLogs),
@@ -63,10 +74,18 @@ export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one }) => 
   }),
 }));
 
-export const marketplaceListingsRelations = relations(marketplaceListings, ({ one }) => ({
+export const marketplaceListingsRelations = relations(marketplaceListings, ({ one, many }) => ({
   equipment: one(equipment, {
     fields: [marketplaceListings.equipmentId],
     references: [equipment.id],
+  }),
+  messages: many(messages),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  listing: one(marketplaceListings, {
+    fields: [messages.listingId],
+    references: [marketplaceListings.id],
   }),
 }));
 
@@ -75,6 +94,7 @@ export const marketplaceListingsRelations = relations(marketplaceListings, ({ on
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true, userId: true, createdAt: true });
 export const insertMaintenanceLogSchema = createInsertSchema(maintenanceLogs).omit({ id: true, userId: true, createdAt: true });
 export const insertMarketplaceListingSchema = createInsertSchema(marketplaceListings).omit({ id: true, sellerId: true, createdAt: true, status: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, senderId: true, senderName: true, isRead: true, createdAt: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 export type Equipment = typeof equipment.$inferSelect;
@@ -83,12 +103,15 @@ export type MaintenanceLog = typeof maintenanceLogs.$inferSelect;
 export type InsertMaintenanceLog = z.infer<typeof insertMaintenanceLogSchema>;
 export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
 export type InsertMarketplaceListing = z.infer<typeof insertMarketplaceListingSchema>;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 // Request types
 export type CreateEquipmentRequest = InsertEquipment;
 export type UpdateEquipmentRequest = Partial<InsertEquipment>;
 export type CreateMaintenanceLogRequest = InsertMaintenanceLog;
 export type CreateMarketplaceListingRequest = InsertMarketplaceListing;
+export type CreateMessageRequest = InsertMessage;
 
 // Response types
 export type EquipmentResponse = Equipment & { logs?: MaintenanceLog[] };
@@ -96,6 +119,15 @@ export type MaintenanceLogResponse = MaintenanceLog & { equipmentName?: string }
 export type MarketplaceListingResponse = MarketplaceListing & { 
   equipment: Equipment;
   maintenanceLogs: MaintenanceLog[];
+};
+export type MessageResponse = Message;
+export type ConversationResponse = {
+  listingId: number;
+  listing: MarketplaceListing & { equipment: Equipment };
+  otherUserId: string;
+  otherUserName: string | null;
+  lastMessage: Message;
+  unreadCount: number;
 };
 
 // Query params

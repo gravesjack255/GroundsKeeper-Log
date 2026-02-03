@@ -253,5 +253,89 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // User's own listings
+  app.get("/api/marketplace/my-listings", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const listings = await storage.getUserListings(userId);
+    res.json(listings);
+  });
+
+  // Update listing status (mark as sold)
+  app.patch("/api/marketplace/:id/status", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const id = Number(req.params.id);
+    const { status } = req.body as { status: string };
+    
+    if (!['active', 'sold', 'removed'].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    
+    const listing = await storage.updateListingStatus(userId, id, status);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+    res.json(listing);
+  });
+
+  // Messages Routes
+  app.get("/api/messages/conversations", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const conversations = await storage.getConversations(userId);
+    res.json(conversations);
+  });
+
+  app.get("/api/messages/unread-count", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const count = await storage.getUnreadMessageCount(userId);
+    res.json({ count });
+  });
+
+  app.get("/api/messages/:listingId/:otherUserId", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const listingId = Number(req.params.listingId);
+    const otherUserId = req.params.otherUserId;
+    const messages = await storage.getMessages(userId, listingId, otherUserId);
+    res.json(messages);
+  });
+
+  app.post("/api/messages", isAuthenticated, async (req, res) => {
+    const { id: userId, firstName, lastName, email } = getUserFromRequest(req);
+    const senderName = `${firstName || ''} ${lastName || ''}`.trim() || email || 'Anonymous';
+    
+    try {
+      const { listingId, receiverId, content } = req.body as { listingId: number; receiverId: string; content: string };
+      
+      if (!listingId || !receiverId || !content) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Verify listing exists
+      const listing = await storage.getMarketplaceListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
+      const message = await storage.createMessage(userId, senderName, {
+        listingId,
+        receiverId,
+        content,
+      });
+      res.status(201).json(message);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error" });
+      }
+      throw err;
+    }
+  });
+
+  app.post("/api/messages/:listingId/:senderId/read", isAuthenticated, async (req, res) => {
+    const { id: userId } = getUserFromRequest(req);
+    const listingId = Number(req.params.listingId);
+    const senderId = req.params.senderId;
+    await storage.markMessagesAsRead(userId, listingId, senderId);
+    res.status(204).send();
+  });
+
   return httpServer;
 }

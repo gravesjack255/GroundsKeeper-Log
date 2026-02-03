@@ -3,6 +3,7 @@ import {
   equipment,
   maintenanceLogs,
   marketplaceListings,
+  messages,
   type Equipment,
   type InsertEquipment,
   type UpdateEquipmentRequest,
@@ -11,8 +12,11 @@ import {
   type MarketplaceListing,
   type InsertMarketplaceListing,
   type MarketplaceListingResponse,
+  type Message,
+  type InsertMessage,
+  type ConversationResponse,
 } from "@shared/schema";
-import { eq, desc, ilike, or, and, SQL } from "drizzle-orm";
+import { eq, desc, ilike, or, and, SQL, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Equipment - all operations scoped by userId
@@ -33,6 +37,15 @@ export interface IStorage {
   createMarketplaceListing(sellerId: string, sellerName: string, data: InsertMarketplaceListing): Promise<MarketplaceListing>;
   removeMarketplaceListing(sellerId: string, id: number): Promise<boolean>;
   getActiveListingForEquipment(equipmentId: number): Promise<MarketplaceListing | undefined>;
+  getUserListings(userId: string): Promise<(MarketplaceListing & { equipment: Equipment })[]>;
+  updateListingStatus(sellerId: string, id: number, status: string): Promise<MarketplaceListing | undefined>;
+
+  // Messages - in-app messaging between buyers and sellers
+  getMessages(userId: string, listingId: number, otherUserId: string): Promise<Message[]>;
+  getConversations(userId: string): Promise<ConversationResponse[]>;
+  createMessage(senderId: string, senderName: string, data: InsertMessage): Promise<Message>;
+  markMessagesAsRead(userId: string, listingId: number, senderId: string): Promise<void>;
+  getUnreadMessageCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -239,6 +252,136 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(marketplaceListings.equipmentId, equipmentId), eq(marketplaceListings.status, 'active')))
       .limit(1);
     return listing;
+  }
+
+  async getUserListings(userId: string): Promise<(MarketplaceListing & { equipment: Equipment })[]> {
+    const results = await db
+      .select({
+        listing: marketplaceListings,
+        equipment: equipment,
+      })
+      .from(marketplaceListings)
+      .innerJoin(equipment, eq(marketplaceListings.equipmentId, equipment.id))
+      .where(eq(marketplaceListings.sellerId, userId))
+      .orderBy(desc(marketplaceListings.createdAt));
+    
+    return results.map(r => ({ ...r.listing, equipment: r.equipment }));
+  }
+
+  async updateListingStatus(sellerId: string, id: number, status: string): Promise<MarketplaceListing | undefined> {
+    const [listing] = await db
+      .update(marketplaceListings)
+      .set({ status })
+      .where(and(eq(marketplaceListings.id, id), eq(marketplaceListings.sellerId, sellerId)))
+      .returning();
+    return listing;
+  }
+
+  // Messages
+  async getMessages(userId: string, listingId: number, otherUserId: string): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.listingId, listingId),
+          or(
+            and(eq(messages.senderId, userId), eq(messages.receiverId, otherUserId)),
+            and(eq(messages.senderId, otherUserId), eq(messages.receiverId, userId))
+          )
+        )
+      )
+      .orderBy(messages.createdAt);
+  }
+
+  async getConversations(userId: string): Promise<ConversationResponse[]> {
+    // Get all messages where user is sender or receiver
+    const userMessages = await db
+      .select()
+      .from(messages)
+      .where(or(eq(messages.senderId, userId), eq(messages.receiverId, userId)))
+      .orderBy(desc(messages.createdAt));
+
+    // Group by listing and other user
+    const conversationsMap = new Map<string, { listingId: number; otherUserId: string; otherUserName: string | null; lastMessage: Message; unreadCount: number }>();
+    
+    for (const msg of userMessages) {
+      const otherUserId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+      const key = `${msg.listingId}-${otherUserId}`;
+      
+      if (!conversationsMap.has(key)) {
+        const unreadCount = userMessages.filter(m => 
+          m.listingId === msg.listingId && 
+          m.senderId === otherUserId && 
+          m.receiverId === userId && 
+          !m.isRead
+        ).length;
+        
+        conversationsMap.set(key, {
+          listingId: msg.listingId,
+          otherUserId,
+          otherUserName: msg.senderId === userId ? null : msg.senderName,
+          lastMessage: msg,
+          unreadCount,
+        });
+      }
+    }
+
+    // Fetch listing details for each conversation
+    const conversations: ConversationResponse[] = [];
+    for (const conv of Array.from(conversationsMap.values())) {
+      const listingData = await db
+        .select({
+          listing: marketplaceListings,
+          equipment: equipment,
+        })
+        .from(marketplaceListings)
+        .innerJoin(equipment, eq(marketplaceListings.equipmentId, equipment.id))
+        .where(eq(marketplaceListings.id, conv.listingId))
+        .limit(1);
+
+      if (listingData.length > 0) {
+        conversations.push({
+          listingId: conv.listingId,
+          listing: { ...listingData[0].listing, equipment: listingData[0].equipment },
+          otherUserId: conv.otherUserId,
+          otherUserName: conv.otherUserName,
+          lastMessage: conv.lastMessage,
+          unreadCount: conv.unreadCount,
+        });
+      }
+    }
+
+    return conversations;
+  }
+
+  async createMessage(senderId: string, senderName: string, data: InsertMessage): Promise<Message> {
+    const [msg] = await db
+      .insert(messages)
+      .values({ ...data, senderId, senderName, isRead: false })
+      .returning();
+    return msg;
+  }
+
+  async markMessagesAsRead(userId: string, listingId: number, senderId: string): Promise<void> {
+    await db
+      .update(messages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(messages.listingId, listingId),
+          eq(messages.senderId, senderId),
+          eq(messages.receiverId, userId)
+        )
+      );
+  }
+
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(messages)
+      .where(and(eq(messages.receiverId, userId), eq(messages.isRead, false)));
+    return result[0]?.count || 0;
   }
 }
 

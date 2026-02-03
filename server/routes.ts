@@ -293,9 +293,9 @@ export async function registerRoutes(
   app.get("/api/messages/:listingId/:otherUserId", isAuthenticated, async (req, res) => {
     const { id: userId } = getUserFromRequest(req);
     const listingId = Number(req.params.listingId);
-    const otherUserId = req.params.otherUserId;
-    const messages = await storage.getMessages(userId, listingId, otherUserId);
-    res.json(messages);
+    const otherUserId = req.params.otherUserId as string;
+    const msgs = await storage.getMessages(userId, listingId, otherUserId);
+    res.json(msgs);
   });
 
   app.post("/api/messages", isAuthenticated, async (req, res) => {
@@ -332,7 +332,7 @@ export async function registerRoutes(
   app.post("/api/messages/:listingId/:senderId/read", isAuthenticated, async (req, res) => {
     const { id: userId } = getUserFromRequest(req);
     const listingId = Number(req.params.listingId);
-    const senderId = req.params.senderId;
+    const senderId = req.params.senderId as string;
     await storage.markMessagesAsRead(userId, listingId, senderId);
     res.status(204).send();
   });

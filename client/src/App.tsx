@@ -13,6 +13,8 @@ import MaintenanceLogs from "@/pages/MaintenanceLogs";
 import Landing from "@/pages/Landing";
 import Marketplace from "@/pages/Marketplace";
 import MarketplaceDetail from "@/pages/MarketplaceDetail";
+import MyListings from "@/pages/MyListings";
+import Messages from "@/pages/Messages";
 
 function AuthenticatedRoutes() {
   return (
@@ -23,6 +25,8 @@ function AuthenticatedRoutes() {
       <Route path="/maintenance" component={MaintenanceLogs} />
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/marketplace/:id" component={MarketplaceDetail} />
+      <Route path="/my-listings" component={MyListings} />
+      <Route path="/messages" component={Messages} />
       <Route component={NotFound} />
     </Switch>
   );

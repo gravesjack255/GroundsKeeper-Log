@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { Header } from "@/components/layout/Header";
-import { useMarketplaceListing } from "@/hooks/use-marketplace";
+import { useMarketplaceListing, useSendMessage, useMessages } from "@/hooks/use-marketplace";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -14,7 +18,9 @@ import {
   Mail, 
   DollarSign,
   FileText,
-  MapPin
+  MapPin,
+  MessageSquare,
+  Send
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -22,6 +28,34 @@ export default function MarketplaceDetail() {
   const params = useParams<{ id: string }>();
   const listingId = Number(params.id);
   const { data: listing, isLoading, error } = useMarketplaceListing(listingId);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [newMessage, setNewMessage] = useState('');
+  const sendMessage = useSendMessage();
+  
+  const isOwnListing = listing?.sellerId === user?.id;
+  const { data: messages } = useMessages(
+    listingId,
+    isOwnListing ? '' : (listing?.sellerId || '')
+  );
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !listing) return;
+    
+    sendMessage.mutate({
+      listingId,
+      receiverId: listing.sellerId,
+      content: newMessage.trim(),
+    }, {
+      onSuccess: () => {
+        setNewMessage('');
+        toast({ title: "Message sent to seller" });
+      },
+      onError: () => {
+        toast({ title: "Failed to send message", variant: "destructive" });
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -138,9 +172,12 @@ export default function MarketplaceDetail() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Contact Seller</CardTitle>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Contact Seller
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {listing.sellerName && (
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />
@@ -156,6 +193,47 @@ export default function MarketplaceDetail() {
                 <p className="text-xs text-muted-foreground">
                   Listed on {format(new Date(listing.createdAt!), "MMMM d, yyyy")}
                 </p>
+                
+                {!isOwnListing && (
+                  <div className="pt-2 border-t space-y-2">
+                    {messages && messages.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        You have an ongoing conversation with this seller.{" "}
+                        <Link href="/messages" className="text-primary hover:underline">
+                          View messages
+                        </Link>
+                      </div>
+                    )}
+                    <Textarea
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Send a message to the seller..."
+                      className="resize-none"
+                      rows={3}
+                      data-testid="input-contact-message"
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || sendMessage.isPending}
+                      className="w-full"
+                      data-testid="button-send-to-seller"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Message
+                    </Button>
+                  </div>
+                )}
+                
+                {isOwnListing && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      This is your listing.{" "}
+                      <Link href="/my-listings" className="text-primary hover:underline">
+                        Manage your listings
+                      </Link>
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

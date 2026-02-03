@@ -1,8 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, PenTool, Wrench, LogOut, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, PenTool, Wrench, LogOut, ShoppingCart, MessageSquare, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useUnreadMessageCount } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +16,13 @@ import {
 export function Header() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { data: unreadData } = useUnreadMessageCount();
+  const unreadCount = unreadData?.count || 0;
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/equipment", label: "Equipment Fleet", icon: PenTool },
-    { href: "/maintenance", label: "Maintenance Logs", icon: Wrench },
+    { href: "/equipment", label: "Equipment", icon: PenTool },
+    { href: "/maintenance", label: "Logs", icon: Wrench },
     { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
   ];
 
@@ -88,6 +92,22 @@ export function Header() {
                   <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                 )}
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/messages" className="flex items-center gap-2 cursor-pointer" data-testid="link-messages">
+                  <MessageSquare className="h-4 w-4" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <Badge variant="default" className="ml-auto text-xs">{unreadCount}</Badge>
+                  )}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/my-listings" className="flex items-center gap-2 cursor-pointer" data-testid="link-my-listings">
+                  <Package className="h-4 w-4" />
+                  My Listings
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <a href="/api/logout" className="flex items-center gap-2 cursor-pointer" data-testid="button-logout">

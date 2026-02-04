@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { TurfTrackLogo } from "@/components/TurfTrackLogo";
 import { 
   Wrench, 
   TrendingUp, 
@@ -20,9 +21,7 @@ export default function Landing() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-              <Wrench className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <TurfTrackLogo size="md" />
             <span className="text-xl font-display font-bold">TurfTrack</span>
           </div>
           <a href="/api/login">
@@ -427,9 +426,7 @@ export default function Landing() {
       <footer className="py-8 px-4 border-t">
         <div className="container mx-auto max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
-              <Wrench className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <TurfTrackLogo size="sm" />
             <span className="font-semibold">TurfTrack</span>
           </div>
           <p className="text-sm text-muted-foreground">

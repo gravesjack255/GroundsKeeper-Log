@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUnreadMessageCount } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TurfTrackLogo } from "@/components/TurfTrackLogo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,9 +40,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center px-4 md:px-6">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-            <Wrench className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <TurfTrackLogo size="md" />
           <span className="hidden font-display text-xl font-bold text-primary md:inline-block">
             TurfTrack
           </span>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, PenTool, Wrench, LogOut, ShoppingCart, MessageSquare, Package } from "lucide-react";
+import { LayoutDashboard, PenTool, Wrench, LogOut, ShoppingCart, MessageSquare, Package, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnreadMessageCount } from "@/hooks/use-marketplace";
@@ -24,6 +24,7 @@ export function Header() {
     { href: "/equipment", label: "Equipment", icon: PenTool },
     { href: "/maintenance", label: "Logs", icon: Wrench },
     { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
+    { href: "/messages", label: "Inbox", icon: Inbox, badge: unreadCount },
   ];
 
   const userInitials = user 
@@ -48,19 +49,30 @@ export function Header() {
         <nav className="flex items-center space-x-1 md:space-x-6 text-sm font-medium">
           {navItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
+            const showBadge = 'badge' in item && item.badge && item.badge > 0;
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 transition-colors hover:text-primary",
+                  "relative flex items-center gap-2 rounded-md px-3 py-2 transition-colors hover:text-primary",
                   isActive 
                     ? "bg-primary/10 text-primary font-semibold" 
                     : "text-muted-foreground"
                 )}
+                data-testid={`nav-${item.label.toLowerCase()}`}
               >
                 <item.icon className="h-4 w-4" />
                 <span className="hidden sm:inline">{item.label}</span>
+                {showBadge && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                    data-testid="badge-unread-messages"
+                  >
+                    {item.badge}
+                  </Badge>
+                )}
               </Link>
             );
           })}
@@ -85,7 +97,7 @@ export function Header() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 bg-card border border-border shadow-lg backdrop-blur-none">
               <div className="px-2 py-1.5 text-sm">
                 <div className="font-medium">{userName}</div>
                 {user?.email && (
@@ -93,15 +105,6 @@ export function Header() {
                 )}
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/messages" className="flex items-center gap-2 cursor-pointer" data-testid="link-messages">
-                  <MessageSquare className="h-4 w-4" />
-                  Messages
-                  {unreadCount > 0 && (
-                    <Badge variant="default" className="ml-auto text-xs">{unreadCount}</Badge>
-                  )}
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/my-listings" className="flex items-center gap-2 cursor-pointer" data-testid="link-my-listings">
                   <Package className="h-4 w-4" />

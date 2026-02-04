@@ -124,15 +124,24 @@ Preferred communication style: Simple, everyday language.
 - Messages/Inbox page (/messages) for conversations:
   - View all conversations grouped by listing and user
   - Message threading with 5-second polling for new messages
-  - Unread message count badge in header dropdown
 - Marketplace listing detail page messaging:
   - Buyers can send messages directly to sellers
   - Sellers see "This is your listing" message instead of contact form
   - Link to existing conversations if one exists
-- Header updates:
-  - Messages link in user dropdown with unread badge
-  - My Listings link in user dropdown
 - Security: Server validates messaging rules (receiver must be seller, sender cannot be seller)
+
+### February 2026 - UI/UX Improvements
+- Inbox tab added to main header navigation (moved from dropdown)
+- Unread message count shown as red badge on Inbox tab
+- User profile dropdown made opaque (solid background) for better readability
+- Dropdown simplified to show only My Listings and Sign Out options
+
+### February 2026 - Cloud Storage for Equipment Photos
+- Migrated image uploads from local file storage to Replit Object Storage
+- Presigned URL flow for direct client uploads to cloud storage
+- Images now persist across app deployments
+- Backward compatibility: legacy local images served via /uploads endpoint
+- New uploads use /objects/uploads/:objectId endpoint for cloud storage
 
 ### Development Tools
 - **Vite**: Frontend build tool with React plugin

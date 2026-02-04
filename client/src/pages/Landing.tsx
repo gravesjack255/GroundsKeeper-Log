@@ -46,18 +46,14 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <a href="/api/login">
               <Button size="lg" className="w-full sm:w-auto gap-2" data-testid="button-get-started">
-                Start Tracking Free
+                Get Started
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </a>
           </div>
           
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            <div className="p-4 rounded-lg bg-card border">
-              <div className="text-2xl font-bold text-primary">100%</div>
-              <div className="text-sm text-muted-foreground">Free to use</div>
-            </div>
+          <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
             <div className="p-4 rounded-lg bg-card border">
               <div className="text-2xl font-bold text-primary">2 min</div>
               <div className="text-sm text-muted-foreground">Setup time</div>
@@ -120,7 +116,7 @@ export default function Landing() {
               One Place for Your Entire Fleet
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Track mowers, carts, tractors, and utility vehicles. Every service, every cost, every hour—organized and accessible.
+              Track mowers, carts, tractors, and utility vehicles. Every service, every cost, every hour organized and accessible.
             </p>
           </div>
           
@@ -135,7 +131,7 @@ export default function Landing() {
                 Log Operating Hours for Every Machine
               </h3>
               <p className="text-muted-foreground mb-6">
-                Record current hours when logging maintenance. See at a glance which equipment is due for service based on hour intervals—not guesswork.
+                Record current hours when logging maintenance. See at a glance which equipment is due for service based on hour intervals, not guesswork.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -226,7 +222,7 @@ export default function Landing() {
                 See Exactly Where Your Money Goes
               </h3>
               <p className="text-muted-foreground mb-6">
-                Every maintenance log includes cost. TurfTrack automatically calculates totals by equipment, category, and time period—so you can answer budget questions instantly.
+                Every maintenance log includes cost. TurfTrack automatically calculates totals by equipment, category, and time period so you can answer budget questions instantly.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -416,11 +412,11 @@ export default function Landing() {
             Ready to Take Control of Your Fleet?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Join superintendents who've switched from spreadsheets and filing cabinets to TurfTrack. Setup takes 2 minutes. It's free.
+            Join superintendents who have switched from spreadsheets and filing cabinets to TurfTrack. Setup takes just 2 minutes.
           </p>
           <a href="/api/login">
             <Button size="lg" className="gap-2" data-testid="button-cta-signup">
-              Start Tracking Free
+              Get Started
               <ArrowRight className="h-4 w-4" />
             </Button>
           </a>

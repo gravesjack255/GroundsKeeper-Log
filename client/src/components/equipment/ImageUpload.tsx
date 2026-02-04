@@ -131,6 +131,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
               <Camera className="h-8 w-8" />
               <span className="text-sm font-medium">Add Photo</span>
               <span className="text-xs">Click to select from your library</span>
+              <span className="text-xs text-muted-foreground/70">Horizontal photos work best</span>
             </>
           )}
         </button>

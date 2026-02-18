@@ -2,11 +2,23 @@ import { useState } from "react";
 import { useRoute } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { useEquipmentDetail, useDeleteEquipment } from "@/hooks/use-equipment";
+import { useDeleteMaintenanceLog } from "@/hooks/use-maintenance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Calendar,
@@ -26,26 +38,17 @@ import { format, subMonths, startOfYear } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type SpendPeriod = 'ytd' | '6months' | 'all';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 export default function EquipmentDetail() {
   const [, params] = useRoute("/equipment/:id");
   const id = parseInt(params?.id || "0");
   const [, setLocation] = useLocation();
   const [spendPeriod, setSpendPeriod] = useState<SpendPeriod>('ytd');
+  const [deleteLogTarget, setDeleteLogTarget] = useState<{ id: number; type: string; date: string } | null>(null);
   
   const { data: equipment, isLoading } = useEquipmentDetail(id);
   const deleteEquipment = useDeleteEquipment();
+  const deleteLog = useDeleteMaintenanceLog();
 
   // Calculate maintenance spend based on selected period
   const getMaintenanceSpend = () => {
@@ -332,15 +335,26 @@ export default function EquipmentDetail() {
                                     </p>
                                   )}
                                 </div>
-                                <div className="text-right flex-shrink-0">
-                                  <div className="font-mono text-sm font-medium">
-                                    ${Number(log.cost).toFixed(2)}
-                                  </div>
-                                  {log.hoursAtService && (
-                                    <div className="text-xs text-muted-foreground">
-                                      @ {Number(log.hoursAtService).toLocaleString()} hrs
+                                <div className="flex items-start gap-2 flex-shrink-0">
+                                  <div className="text-right">
+                                    <div className="font-mono text-sm font-medium">
+                                      ${Number(log.cost).toFixed(2)}
                                     </div>
-                                  )}
+                                    {log.hoursAtService && (
+                                      <div className="text-xs text-muted-foreground">
+                                        @ {Number(log.hoursAtService).toLocaleString()} hrs
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="text-muted-foreground hover:text-destructive invisible group-hover:visible"
+                                    onClick={() => setDeleteLogTarget({ id: log.id, type: log.type, date: format(new Date(log.date), 'MMM d, yyyy') })}
+                                    data-testid={`button-delete-log-${log.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -389,6 +403,32 @@ export default function EquipmentDetail() {
 
         </div>
       </main>
+
+      <AlertDialog open={!!deleteLogTarget} onOpenChange={(open) => !open && setDeleteLogTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Maintenance Log</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {deleteLogTarget?.type} log from {deleteLogTarget?.date}? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-log">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteLogTarget) {
+                  deleteLog.mutate(deleteLogTarget.id);
+                  setDeleteLogTarget(null);
+                }
+              }}
+              data-testid="button-confirm-delete-log"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

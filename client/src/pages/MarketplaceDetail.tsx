@@ -295,6 +295,11 @@ export default function MarketplaceDetail() {
                             At {log.hoursAtService} hours
                           </p>
                         )}
+                        {log.createdAt && (
+                          <p className="text-xs text-muted-foreground/60">
+                            Logged {format(new Date(log.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-primary">

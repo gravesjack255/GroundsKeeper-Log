@@ -334,6 +334,11 @@ export default function EquipmentDetail() {
                                       Tech: {log.performedBy}
                                     </p>
                                   )}
+                                  {log.createdAt && (
+                                    <p className="text-xs text-muted-foreground/50">
+                                      Logged {format(new Date(log.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="flex items-start gap-2 flex-shrink-0">
                                   <div className="text-right">
